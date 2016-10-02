@@ -16,7 +16,9 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Slidecoding
+                     , Slidecoding.Browser
                      , Slidecoding.GHCI
+                     , Slidecoding.Indexer
                      , Slidecoding.Presentation
                      , Slidecoding.ReplSession
                      , Slidecoding.Types

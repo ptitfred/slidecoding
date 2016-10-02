@@ -2,10 +2,13 @@
 
 module Slidecoding.Types
     ( Context(..)
+    , Module(..)
     , ModuleName
     , Name
     , Port
+    , Signature(..)
     , Stream(..)
+    , Symbol(..)
     , singleModuleContext
     ) where
 
@@ -14,6 +17,10 @@ import System.FilePath ((</>), (<.>))
 type Port = Int
 type Name = String
 type ModuleName = String
+
+newtype Module    = Module String
+newtype Symbol    = Symbol String
+newtype Signature = Signature String
 
 singleModuleContext :: ModuleName -> Context
 singleModuleContext moduleName = Context moduleName [path] [moduleName] []

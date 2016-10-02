@@ -1,8 +1,20 @@
 module Slidecoding
     (
+    -- Browser
+      browseSignatures
+    , browseSymbols
+    , source
+
     -- GHCI
-      run
+    , run
     , ioStream
+
+    -- Indexer
+    , Description(..)
+    , Source(..)
+    , Item(..)
+    , index
+    , indexIO
 
     -- Presentation
     , Presentation(..)
@@ -18,17 +30,21 @@ module Slidecoding
 
     -- Types
     , Context(..)
+    , Module
     , ModuleName
     , Name
     , Port
     , Stream(..)
+    , Symbol
     , singleModuleContext
 
     -- WebSockets
     , start
     ) where
 
+import Slidecoding.Browser
 import Slidecoding.GHCI
+import Slidecoding.Indexer
 import Slidecoding.Presentation
 import Slidecoding.ReplSession
 import Slidecoding.Types
