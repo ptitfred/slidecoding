@@ -1,23 +1,26 @@
-module Slidecoding.ReplSession (
-  ReplSession(..),
-  evalInSession,
-  startSession,
-  endSession
-) where
+module Slidecoding.ReplSession
+    ( ReplSession(..)
+    , evalInSession
+    , startSession
+    , endSession
+    ) where
+
+ {-
+  - Original work from https://github.com/jetaggart/light-haskell/blob/master/haskell/ReplSession.hs
+  -}
 
 import System.IO
 import System.Process
 import System.Directory (getDirectoryContents)
 import Data.List (isSuffixOf)
-import Control.Monad (liftM, void)
+import Control.Monad (void)
 import Language.Haskell.Exts
 
-data ReplSession = ReplSession {
-  replIn :: Handle,
-  replOut :: Handle,
-  replError :: Handle,
-  replProcess :: ProcessHandle
-}
+data ReplSession = ReplSession { replIn      :: Handle
+                               , replOut     :: Handle
+                               , replError   :: Handle
+                               , replProcess :: ProcessHandle
+                               }
 
 evalInSession :: String -> ReplSession -> IO (Either String String)
 evalInSession cmd session@(ReplSession _ out err _) = do
@@ -35,9 +38,9 @@ prepareCode code = case parseCode code of
            else code
 
 isFunDecl :: Decl -> Bool
-isFunDecl (TypeSig {}) = True
-isFunDecl (FunBind {}) = True
-isFunDecl (PatBind {}) = True
+isFunDecl TypeSig {} = True
+isFunDecl FunBind {} = True
+isFunDecl PatBind {} = True
 isFunDecl _ = False
 
 prependLet :: [Decl] -> String
@@ -46,7 +49,7 @@ prependLet = prettyPrint . letStmt
 parseCode :: String -> [Decl]
 parseCode code = case parseFileContents code of
   (ParseOk (Module _ _ _ _ _ _ decls)) -> decls
-  (ParseFailed {}) -> []
+  ParseFailed {} -> []
 
 readEvalOutput :: ReplSession -> IO (Either String String)
 readEvalOutput (ReplSession _ out err _) = do
@@ -58,32 +61,38 @@ readEvalOutput (ReplSession _ out err _) = do
     else return . Right $ onlyOutput
 
 readUntil :: Handle -> (String -> Bool) -> IO String
-readUntil handle predicate = readUntil' handle "" predicate
+readUntil handle = readUntil' handle ""
 
 readUntil' :: Handle -> String -> (String -> Bool) -> IO String
 readUntil' handle output predicate = do
   char <- hGetChar handle
   let newOutput = output ++ [char]
-  if predicate $ newOutput
+  if predicate newOutput
     then return newOutput
     else readUntil' handle newOutput predicate
 
 readAll :: Handle -> IO String
-readAll handle = untilM' (liftM not $ hReady handle) (hGetChar handle)
+readAll handle = untilM' (not <$> hReady handle) (hGetChar handle)
 
 startSession :: FilePath -> IO ReplSession
 startSession path = do
-  cabalProject <- isCabalProject path
-  let (cmd, args) = if cabalProject then ("cabal", ["repl"]) else ("ghci", [])
+  (cmd, args) <- replCommand path
   (input, out, err, process) <- runInteractiveProcess cmd args (Just path) Nothing
   let session = ReplSession input out err process
   prepareSession session
   return session
 
+replCommand :: FilePath -> IO (String, [String])
+replCommand dir = choose <$> isStackProject dir <*> isCabalProject dir
+  where choose True  _     = ("stack", ["repl"])
+        choose False True  = ("cabal", ["repl"])
+        choose False False = ("ghci", [])
+
 isCabalProject :: FilePath -> IO Bool
-isCabalProject dir = do
-  files <- getDirectoryContents dir
-  return $ any (".cabal" `isSuffixOf`) files
+isCabalProject dir = any (".cabal" `isSuffixOf`) <$> getDirectoryContents dir
+
+isStackProject :: FilePath -> IO Bool
+isStackProject dir = elem "stack.yaml" <$> getDirectoryContents dir
 
 prepareSession :: ReplSession -> IO ()
 prepareSession session@(ReplSession _ out _ _) = do
@@ -97,11 +106,10 @@ sendCommand cmd (ReplSession input _ _ _) = do
 
 clearHandle :: Handle -> Int -> IO ()
 clearHandle handle wait =
-  untilM (liftM not $ hWaitForInput handle wait) $ do
-    hGetChar handle
+  untilM (not <$> hWaitForInput handle wait) $ hGetChar handle
 
 untilM :: (Monad m) => m Bool -> m a -> m ()
-untilM predicate action = untilM' predicate action >> return ()
+untilM predicate action = void (untilM' predicate action)
 
 untilM' :: (Monad m) => m Bool -> m a -> m [a]
 untilM' predicate action = do
