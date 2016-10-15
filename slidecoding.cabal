@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Slidecoding
                      , Slidecoding.Presentation
+                     , Slidecoding.ReplSession
                      , Lib
   ghc-options:         -Wall -Werror
   build-depends:       base >= 4.8 && < 5
@@ -25,6 +26,8 @@ library
                      , text
                      , aeson
                      , yaml
+                     , process
+                     , haskell-src-exts
   default-language:    Haskell2010
 
 executable slidecoding
