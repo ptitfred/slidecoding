@@ -22,6 +22,7 @@ library
                      , Slidecoding.Indexer
                      , Slidecoding.Presentation
                      , Slidecoding.ReplSession
+                     , Slidecoding.SlidesWriter
                      , Slidecoding.Types
                      , Slidecoding.WebSockets
                      , Lib
@@ -40,6 +41,7 @@ library
                      , haskell-src-exts
                      , bytestring
                      , Cabal
+                     , pandoc
   default-language:    Haskell2010
 
 executable console
