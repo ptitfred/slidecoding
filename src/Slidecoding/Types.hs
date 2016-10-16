@@ -18,7 +18,7 @@ type Port = Int
 type Name = String
 type ModuleName = String
 
-newtype Module    = Module String
+data Module       = Module FilePath ModuleName
 newtype Symbol    = Symbol String
 newtype Signature = Signature String
 

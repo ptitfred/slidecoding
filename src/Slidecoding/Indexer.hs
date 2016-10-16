@@ -46,7 +46,7 @@ symbols (Description _ items) = map symbol items
 writeIndexJson :: FilePath -> Description -> IO ()
 writeIndexJson dir description = writeJSON file description
   where file = dir </> m' <.> "json"
-        Description (Module m') _ = description
+        Description (Module _ m') _ = description
 
 writeJSON :: ToJSON a => FilePath -> a -> IO ()
 writeJSON file o = withFile file WriteMode handler
@@ -65,7 +65,7 @@ loadItem :: Module -> (Symbol, Signature) -> IO Item
 loadItem m (s, sig) = Item s sig . Source . base64 . intercalate "\n" <$> source m s
 
 instance ToJSON Description where
-  toJSON (Description (Module m) items) = object [ L.pack m .= object (map toPair items) ]
+  toJSON (Description (Module _ m) items) = object [ L.pack m .= object (map toPair items) ]
     where toPair (Item (Symbol s) (Signature sig) (Source src64)) =
               L.pack s .=
                 object [ "qname"        .= qname s
@@ -74,10 +74,10 @@ instance ToJSON Description where
                        , "sourceBase64" .= src64
                        ]
           qname s = m ++ "." ++ s
-          sourceFile s = m ++ "_" ++ s ++ ".hs"
+          sourceFile s = m ++ "_" ++ s <.> "hs"
 
 writeSource :: Module -> FilePath -> Symbol -> IO ()
-writeSource m@(Module m') dir s@(Symbol s') = do
+writeSource m@(Module _ m') dir s@(Symbol s') = do
   content <- unlines <$> source m s
   writeFile file content
     where file = dir </> qname <.> "hs"
