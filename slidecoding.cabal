@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Slidecoding
                      , Slidecoding.Browser
+                     , Slidecoding.CabalHelper
                      , Slidecoding.GHCI
                      , Slidecoding.Indexer
                      , Slidecoding.Presentation
@@ -38,6 +39,7 @@ library
                      , process
                      , haskell-src-exts
                      , bytestring
+                     , Cabal
   default-language:    Haskell2010
 
 executable console

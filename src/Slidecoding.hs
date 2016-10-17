@@ -5,6 +5,9 @@ module Slidecoding
     , browseSymbols
     , source
 
+    -- CabalHelper
+    , loadExposedModules
+
     -- GHCI
     , run
     , ioStream
@@ -43,6 +46,7 @@ module Slidecoding
     ) where
 
 import Slidecoding.Browser
+import Slidecoding.CabalHelper
 import Slidecoding.GHCI
 import Slidecoding.Indexer
 import Slidecoding.Presentation
