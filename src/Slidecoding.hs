@@ -33,12 +33,12 @@ module Slidecoding
 
     -- Types
     , Context(..)
-    , Module
+    , Module(..)
     , ModuleName
     , Name
     , Port
     , Stream(..)
-    , Symbol
+    , Symbol(..)
     , singleModuleContext
 
     -- WebSockets
