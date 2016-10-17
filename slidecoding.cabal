@@ -68,7 +68,9 @@ executable slider
   build-depends:       base
                      , slidecoding
                      , directory
+                     , filepath
                      , text
+                     , pandoc
   default-language:    Haskell2010
 
 test-suite slidecoding-test
