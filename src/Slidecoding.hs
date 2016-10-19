@@ -1,9 +1,7 @@
 module Slidecoding
     (
     -- Browser
-      browseSignatures
-    , browseSymbols
-    , source
+      browse
 
     -- CabalHelper
     , loadExposedModules
@@ -13,10 +11,6 @@ module Slidecoding
     , ioStream
 
     -- Indexer
-    , Description(..)
-    , Source(..)
-    , Item(..)
-    , index
     , indexIO
 
     -- Presentation
@@ -33,10 +27,13 @@ module Slidecoding
 
     -- Types
     , Context(..)
+    , Description(..)
+    , Item(..)
     , Module(..)
     , ModuleName
     , Name
     , Port
+    , Source(..)
     , Stream(..)
     , Symbol(..)
     , singleModuleContext

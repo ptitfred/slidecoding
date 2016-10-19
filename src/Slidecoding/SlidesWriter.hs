@@ -3,7 +3,6 @@ module Slidecoding.SlidesWriter
     ) where
 
 import Slidecoding.Types
-import Slidecoding.Indexer               (Description(..), Item(..), Source(..))
 
 import Codec.Binary.Base64.String as B64 (decode)
 

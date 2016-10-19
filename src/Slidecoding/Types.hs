@@ -2,11 +2,14 @@
 
 module Slidecoding.Types
     ( Context(..)
+    , Description(..)
+    , Item(..)
     , Module(..)
     , ModuleName
     , Name
     , Port
     , Signature(..)
+    , Source(..)
     , Stream(..)
     , Symbol(..)
     , singleModuleContext
@@ -21,6 +24,10 @@ type ModuleName = String
 data Module       = Module FilePath ModuleName
 newtype Symbol    = Symbol String
 newtype Signature = Signature String
+
+data Description = Description Module [Item]
+data Item = Item Symbol Signature Source
+newtype Source = Source String
 
 singleModuleContext :: ModuleName -> Context
 singleModuleContext moduleName = Context moduleName [path] [moduleName] []
