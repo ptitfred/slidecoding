@@ -1,6 +1,6 @@
 module Main (main) where
 
-import           Slidecoding             (Description(..), Module(..), browse, loadExposedModules, load, ValidationMessage, Presentation(..), Metadata(..))
+import           Slidecoding             (Description(..), Module(..), browse, indexIO, loadExposedModules, load, ValidationMessage, Presentation(..), Metadata(..))
 import           Slidecoding.SlidesWriter
 
 import           Control.Monad           ((>=>), when)
@@ -13,7 +13,7 @@ import           System.Directory        (getDirectoryContents, doesDirectoryExi
 import           Text.Pandoc
 
 data Config = Config FilePath Action
-data Action = Check | ProcessSlides
+data Action = Check | ProcessSlides | Index
 
 main :: IO ()
 main = withConfig run
@@ -21,6 +21,7 @@ main = withConfig run
 run :: Config -> IO ()
 run (Config f Check)         = check f
 run (Config f ProcessSlides) = processSlides f
+run (Config f Index)         = index f
 
 check :: FilePath -> IO ()
 check f = do
@@ -38,6 +39,12 @@ newline = putStrLn ""
 
 processSlides :: FilePath -> IO ()
 processSlides f = withProject f $ \(slides, descs) -> mapM_ (processSlide descs) slides
+
+index :: FilePath -> IO ()
+index path = loadExposedModules path >>= maybe noModule someModules
+  where noModule = putStrLn "No modules found"
+        someModules = mapM_ indexModule
+        indexModule m = indexIO m (path </> "tmp")
 
 type Project = ([FilePath], [Description])
 
@@ -124,7 +131,7 @@ printFiles (f:fs) = do
   printFiles fs
 
 usage :: IO ()
-usage = putStrLn "Usage: slider <check|process> directory"
+usage = putStrLn "Usage: slider <check|process|index> directory"
 
 getConfig :: IO (Maybe Config)
 getConfig = parseArgs <$> getArgs
@@ -137,4 +144,5 @@ parseArgs _             = Nothing
 parseAction :: String -> Maybe Action
 parseAction "check"   = Just Check
 parseAction "process" = Just ProcessSlides
+parseAction "index"   = Just Index
 parseAction _         = Nothing
