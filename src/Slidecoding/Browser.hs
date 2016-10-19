@@ -16,8 +16,9 @@ import           Language.Haskell.GhcMod.Types        (GhcModLog, GhcModError, I
 import Codec.Binary.Base64.String as B64 (encode)
 import Control.Arrow          (first)
 import Control.Monad.IO.Class (liftIO)
-import Data.Char              (isSpace)
-import Data.List              (intercalate, isPrefixOf)
+import Data.Char              (isSpace, isUpper)
+import Data.List              (find, intercalate, isPrefixOf)
+import Data.Maybe             (fromMaybe)
 
 import System.Directory (canonicalizePath)
 import System.FilePath  ((</>), (<.>))
@@ -48,12 +49,22 @@ base64 = filter (not . isSpace) . B64.encode
 browseSignatures :: Module -> IO [Signature]
 browseSignatures (Module wd m) = map Signature . lines <$> runGhcMod wd cmd
   where cmd = GM.browse opts m
-        opts = defaultBrowseOpts { optBrowseDetailed = True }
+        opts = defaultBrowseOpts { optBrowseOperators = True, optBrowseDetailed = True }
 
 scopeTo :: Symbol -> [String] -> [String]
-scopeTo (Symbol symbol) = until (anyOf [empty, otherPrefix]) . from (isPrefixOf prefix)
-  where prefix = symbol ++ " "
-        otherPrefix = allOf [not . isSpace . head, not . isPrefixOf prefix]
+scopeTo (Symbol s) ls | isType s  = firstNonEmpty [limitToPrefix ("data " ++ s) ls, limitToPrefix ("class " ++ s) ls]
+                         | otherwise = limitToPrefix s ls
+
+firstNonEmpty :: [[String]] -> [String]
+firstNonEmpty = fromMaybe [] . find (not.null)
+
+isType :: String -> Bool
+isType = isUpper . head
+
+limitToPrefix :: String -> [String] -> [String]
+limitToPrefix prefix = until (anyOf [empty, otherPrefix]) . from (isPrefixOf prefix')
+  where prefix' = prefix ++ " "
+        otherPrefix = allOf [not . isSpace . head, not . isPrefixOf prefix']
         from  criteria = dropWhile (not.criteria)
         until criteria = takeWhile (not.criteria)
         anyOf ps x = any ($x) ps

@@ -4,6 +4,6 @@
 
 [But you can do more than that, and reason about your IO operations](source://Example1/parseJSON)
 
-# Try it {.console}
+# But you can do more
 
-# Sum it up {.mixed}
+Below a very interesting explanation.
