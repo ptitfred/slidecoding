@@ -13,11 +13,13 @@ import Data.Aeson                 as A   (encode)
 import Data.ByteString.Lazy.Char8 as B   (hPutStrLn)
 import Data.Text                  as L   (pack)
 
+import System.Directory                  (createDirectoryIfMissing)
 import System.FilePath                   ((</>), (<.>))
 import System.IO                         (IOMode(..), withFile)
 
 indexIO :: Module -> FilePath -> IO ()
 indexIO m dir = do
+  createDirectoryIfMissing True dir
   description <- browse m
   writeIndexJson dir description
   writeSources dir description
