@@ -1,6 +1,6 @@
 module Main (main) where
 
-import           Slidecoding             (Description(..), Module(..), index, loadExposedModules, load, ValidationMessage, Presentation(..), Metadata(..))
+import           Slidecoding             (Description(..), Module(..), browse, loadExposedModules, load, ValidationMessage, Presentation(..), Metadata(..))
 import           Slidecoding.SlidesWriter
 
 import           Control.Monad           ((>=>), when)
@@ -72,7 +72,7 @@ checkPresentation = load >=> printResult
 loadModules :: FilePath -> IO [Description]
 loadModules path = do
   modules <- loadExposedModules path
-  maybe (return []) (mapM index) modules
+  maybe (return []) (mapM browse) modules
 
 describeModules :: [Description] -> IO ()
 describeModules []      = putStrLn "  No modules"

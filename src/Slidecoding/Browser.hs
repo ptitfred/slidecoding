@@ -1,9 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Slidecoding.Browser
-    ( browseSignatures
-    , browseSymbols
-    , source
+    ( browse
     ) where
 
 import Slidecoding.Types
@@ -15,27 +13,42 @@ import qualified Language.Haskell.GhcMod.Monad as GMM (runGmOutT, runGhcModT', w
 import           Language.Haskell.GhcMod.Logging      (gmSetLogLevel, gmAppendLogQuiet)
 import           Language.Haskell.GhcMod.Types        (GhcModLog, GhcModError, IOish, Options(..), OutputOpts(..), BrowseOpts(..), defaultOptions, defaultBrowseOpts, defaultGhcModState)
 
-import Control.Arrow (first)
+import Codec.Binary.Base64.String as B64 (encode)
+import Control.Arrow          (first)
 import Control.Monad.IO.Class (liftIO)
-import Data.List              (isPrefixOf)
 import Data.Char              (isSpace)
+import Data.List              (intercalate, isPrefixOf)
 
 import System.Directory (canonicalizePath)
 import System.FilePath  ((</>), (<.>))
 
+browse :: Module -> IO Description
+browse m = withSymbol <$> browseSignatures m >>= loadDescription m
+
+type Interface = (Symbol, Signature)
+
+withSymbol :: [Signature] -> [Interface]
+withSymbol = map decorate
+  where decorate (Signature sig) = (symbol sig, Signature sig)
+        symbol = Symbol . unwords . takeWhile (/= "::") . words
+
+loadDescription :: Module -> [Interface] -> IO Description
+loadDescription m interface = Description m <$> loadItems m interface
+
+loadItems :: Module -> [Interface] -> IO [Item]
+loadItems m interface = loadAll <$> readModule m
+  where loadAll content = map (loadItem content) interface
+
+loadItem :: [String] -> Interface -> Item
+loadItem content (s, sig) = Item s sig . Source . base64 . intercalate "\n" $ scopeTo s content
+
+base64 :: String -> String
+base64 = filter (not . isSpace) . B64.encode
+
 browseSignatures :: Module -> IO [Signature]
-browseSignatures = browse' Signature True
-
-browseSymbols :: Module -> IO [Symbol]
-browseSymbols = browse' Symbol False
-
-browse' :: (String -> a) -> Bool -> Module -> IO [a]
-browse' new detailed (Module wd m) = map new . lines <$> runGhcMod wd cmd
+browseSignatures (Module wd m) = map Signature . lines <$> runGhcMod wd cmd
   where cmd = GM.browse opts m
-        opts = defaultBrowseOpts { optBrowseDetailed = detailed }
-
-source :: Module -> Symbol -> IO [String]
-source m s = scopeTo s <$> readModule m
+        opts = defaultBrowseOpts { optBrowseDetailed = True }
 
 scopeTo :: Symbol -> [String] -> [String]
 scopeTo (Symbol symbol) = until (anyOf [empty, otherPrefix]) . from (isPrefixOf prefix)
