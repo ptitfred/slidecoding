@@ -3,7 +3,7 @@ version:             0.1.0.0
 synopsis:            Slides & livecoding
 description:         Please see README.md
 homepage:            https://github.com/ptitfred/slidecoding#readme
-license:             MIT
+license:             GPL-3
 license-file:        LICENSE
 author:              Frédéric Menou
 maintainer:          frederic.menou@gmail.com
