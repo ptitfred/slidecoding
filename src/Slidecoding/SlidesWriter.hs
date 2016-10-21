@@ -1,14 +1,40 @@
 module Slidecoding.SlidesWriter
-    ( walkSlides
+    ( processSlides
     ) where
 
 import Slidecoding.Types
 
 import Codec.Binary.Base64.String as B64 (decode)
-
 import Data.List                         (find, isPrefixOf)
-
 import Text.Pandoc
+import Text.Printf                       (printf)
+
+processSlides :: [Description] -> [FilePath] -> FilePath -> IO ()
+processSlides descs slides outputFile =
+  (joinSections <$> mapM eachSlide slides) >>= writeFile outputFile
+  where eachSlide f = pipeline <$> readFile f
+        pipeline = walkSlides descs . readSlide
+
+joinSections :: [Pandoc] -> String
+joinSections slides = printf template body
+  where template = unlines [ "<html>"
+                           , "  <body>"
+                           , "    <div id='slides'>"
+                           , "%s"
+                           , "    </div>"
+                           , "  </body>"
+                           , "</html>"
+                           ]
+        body = unlines (writeSection <$> slides)
+
+readSlide :: String -> Pandoc
+readSlide s =
+  case readMarkdown def s of
+    Right doc -> doc
+    Left err  -> error (show err)
+
+writeSection :: Pandoc -> String
+writeSection slide = "<section>\n" ++ writeHtmlString def slide ++ "\n</section>"
 
 walkSlides :: [Description] -> Pandoc -> Pandoc
 walkSlides descs (Pandoc m bs) = Pandoc m $ concatMap (replaceSourceBlock descs) bs
