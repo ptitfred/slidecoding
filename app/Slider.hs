@@ -1,16 +1,14 @@
 module Main (main) where
 
-import           Slidecoding             (Description(..), Module(..), browse, indexIO, loadExposedModules, load, ValidationMessage, Presentation(..), Metadata(..))
-import           Slidecoding.SlidesWriter
+import           Slidecoding             (browse, indexIO, loadExposedModules, load, processSlides, ValidationMessage, Presentation(..), Metadata(..))
+import           Slidecoding.Types
 
 import           Control.Monad           ((>=>), when)
 import           Data.List               (isSuffixOf)
 import qualified Data.Text.IO       as T
 import           System.Environment      (getArgs)
 import           System.FilePath         ((</>))
-import           System.Directory        (getDirectoryContents, doesDirectoryExist)
-
-import           Text.Pandoc
+import           System.Directory        (createDirectoryIfMissing, getDirectoryContents, doesDirectoryExist)
 
 data Config = Config FilePath Action
 data Action = Check | ProcessSlides | Index
@@ -20,7 +18,7 @@ main = withConfig run
 
 run :: Config -> IO ()
 run (Config f Check)         = check f
-run (Config f ProcessSlides) = processSlides f
+run (Config f ProcessSlides) = process f
 run (Config f Index)         = index f
 
 check :: FilePath -> IO ()
@@ -37,8 +35,12 @@ check f = do
 newline :: IO ()
 newline = putStrLn ""
 
-processSlides :: FilePath -> IO ()
-processSlides f = withProject f $ \(slides, descs) -> mapM_ (processSlide descs) slides
+process :: FilePath -> IO ()
+process dir = withProject dir $ \(slides, descs) -> do
+  createDirectoryIfMissing True distDir
+  processSlides descs slides outFile
+    where distDir = dir </> "dist"
+          outFile = distDir </> "index.html"
 
 index :: FilePath -> IO ()
 index path = loadExposedModules path >>= maybe noModule someModules
@@ -59,31 +61,15 @@ onlyWithDirectory f action = do
   good <- doesDirectoryExist f
   when good action
 
-processSlide :: [Description] -> FilePath -> IO ()
-processSlide descs file = readFile file >>= putStrLn . filterSlide descs
-
-filterSlide :: [Description] -> String -> String
-filterSlide descs = writeDoc . walkSlides descs . readDoc
-
-readDoc :: String -> Pandoc
-readDoc s = case readMarkdown def s of
-                 Right doc -> doc
-                 Left err  -> error (show err)
-
-writeDoc :: Pandoc -> String
-writeDoc = writeMarkdown def
-
 checkPresentation :: FilePath -> IO ()
 checkPresentation = load >=> printResult
 
 loadModules :: FilePath -> IO [Description]
-loadModules path = do
-  modules <- loadExposedModules path
-  maybe (return []) (mapM browse) modules
+loadModules path = loadExposedModules path >>= maybe (return []) (mapM browse)
 
 describeModules :: [Description] -> IO ()
-describeModules []      = putStrLn "  No modules"
-describeModules modules = printDescriptions modules
+describeModules []    = putStrLn "  No modules"
+describeModules descs = printDescriptions descs
 
 loadSlides :: FilePath -> IO [FilePath]
 loadSlides path = do

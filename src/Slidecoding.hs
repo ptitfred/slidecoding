@@ -25,6 +25,9 @@ module Slidecoding
     , startSession
     , endSession
 
+    -- SlidesWriter
+    , processSlides
+
     -- Types
     , Context(..)
     , Description(..)
@@ -48,5 +51,6 @@ import Slidecoding.GHCI
 import Slidecoding.Indexer
 import Slidecoding.Presentation
 import Slidecoding.ReplSession
+import Slidecoding.SlidesWriter
 import Slidecoding.Types
 import Slidecoding.WebSockets
