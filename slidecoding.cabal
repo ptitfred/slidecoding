@@ -16,14 +16,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Slidecoding
-                     , Slidecoding.Browser
+                     , Slidecoding.Types
+  other-modules:       Slidecoding.Browser
                      , Slidecoding.CabalHelper
                      , Slidecoding.GHCI
                      , Slidecoding.Indexer
                      , Slidecoding.Presentation
                      , Slidecoding.ReplSession
                      , Slidecoding.SlidesWriter
-                     , Slidecoding.Types
                      , Slidecoding.WebSockets
   ghc-options:         -Wall -Werror
   build-depends:       base >= 4.8 && < 5
