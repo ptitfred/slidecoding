@@ -14,32 +14,15 @@ module Slidecoding
     , indexIO
 
     -- Presentation
-    , Presentation(..)
-    , Metadata(..)
-    , ValidationMessage
     , load
 
     -- ReplSession
-    , ReplSession(..)
     , evalInSession
     , startSession
     , endSession
 
     -- SlidesWriter
     , processSlides
-
-    -- Types
-    , Context(..)
-    , Description(..)
-    , Item(..)
-    , Module(..)
-    , ModuleName
-    , Name
-    , Port
-    , Source(..)
-    , Stream(..)
-    , Symbol(..)
-    , singleModuleContext
 
     -- WebSockets
     , start
@@ -52,5 +35,4 @@ import Slidecoding.Indexer
 import Slidecoding.Presentation
 import Slidecoding.ReplSession
 import Slidecoding.SlidesWriter
-import Slidecoding.Types
 import Slidecoding.WebSockets

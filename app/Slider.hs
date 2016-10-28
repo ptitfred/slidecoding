@@ -1,6 +1,6 @@
 module Main (main) where
 
-import           Slidecoding             (browse, indexIO, loadExposedModules, load, processSlides, ValidationMessage, Presentation(..), Metadata(..))
+import           Slidecoding             (browse, indexIO, loadExposedModules, load, processSlides)
 import           Slidecoding.Types
 
 import           Control.Monad           ((>=>))
