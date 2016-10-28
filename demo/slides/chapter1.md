@@ -1,4 +1,4 @@
-# A glance at Monad {.pedantic}
+# A glance at Monad {.pedantic}
 
 [Imperative code enforced](source://Example1/parseCSV)
 

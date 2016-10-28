@@ -28,4 +28,8 @@ add support to other languages.
 
 Markdown parsing is done with the amazing [pandoc](http://pandoc.org).
 
+Slide display with [Deck.js](https://github.com/imakewebthings/deck.js).
+
+PDF export done with [decktape](https://github.com/astefanutti/decktape).
+
 Frédéric Menou
