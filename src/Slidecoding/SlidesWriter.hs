@@ -4,46 +4,75 @@ module Slidecoding.SlidesWriter
 
 import Slidecoding.Types
 
+import Slidecoding.Template
+
 import Codec.Binary.Base64.String as B64 (decode)
 import Data.List                         (find, isPrefixOf)
-import Text.Pandoc
-import Text.Printf                       (printf)
+import System.FilePath                   ((</>), dropExtension,takeFileName)
+import Text.Pandoc                       (Pandoc(..), Block(..), Inline(..), def, nullAttr, nullMeta, readMarkdown, writeHtml)
 
 processSlides :: [Description] -> [FilePath] -> FilePath -> IO ()
-processSlides descs slides outputFile =
-  (joinSections <$> mapM eachSlide slides) >>= writeFile outputFile
-  where eachSlide f = pipeline <$> readFile f
-        pipeline = walkSlides descs . readSlide
+processSlides descs chapters dist = do
+  distributeAssets dist
+  document <- joinSections <$> mapM eachChapter chapters
+  writeFile outputFile document
+    where eachChapter f = pipeline f <$> readFile f
+          pipeline f    = walkSlides descs . readChapter f
+          outputFile    = dist </> "index.html"
 
 joinSections :: [Pandoc] -> String
-joinSections slides = printf template body
-  where template = unlines [ "<html>"
-                           , "  <body>"
-                           , "    <div id='slides'>"
-                           , "%s"
-                           , "    </div>"
-                           , "  </body>"
-                           , "</html>"
-                           ]
-        body = unlines (writeSection <$> slides)
+joinSections slides = renderHtml (template title content)
+  where content = mconcat $ mconcat (writeSection <$> slides)
+        title   = "My presentation" -- TODO extract it from presentation.yaml
 
-readSlide :: String -> Pandoc
-readSlide s =
-  case readMarkdown def s of
-    Right doc -> doc
-    Left err  -> error (show err)
+data Chapter = Chapter FilePath Pandoc
+newtype Section = Section [Block]
 
-writeSection :: Pandoc -> String
-writeSection slide = "<section>\n" ++ writeHtmlString def slide ++ "\n</section>"
+readChapter :: FilePath -> String -> Chapter
+readChapter f s = either handleFailure buildChapter parse
+  where parse         = readMarkdown def s
+        buildChapter  = Chapter f
+        handleFailure = error . show
 
-walkSlides :: [Description] -> Pandoc -> Pandoc
-walkSlides descs (Pandoc m bs) = Pandoc m $ concatMap (replaceSourceBlock descs) bs
+writeSection :: Pandoc -> [Html]
+writeSection (Pandoc _ blocks) = writeSection' <$> sections
+  where sections = groupBySection blocks
+
+writeSection' :: Section -> Html
+writeSection' (Section (Header 1 (id', classes, properties) titleContent : blocks)) = section $ writeHtml def section'
+  where section' = Pandoc nullMeta (Header 1 ("", [], properties) titleContent : blocks)
+        section = mkSection id' classes
+writeSection' (Section content) = wrapSection $ writeHtml def section'
+  where section' = Pandoc nullMeta content
+
+groupBySection :: [Block] -> [Section]
+groupBySection [] = []
+groupBySection (b : bs) | isTitle b = Section (b : sectionContent) : groupBySection rest
+  where (sectionContent, rest) = break isTitle bs
+groupBySection bs = Section sectionContent : groupBySection rest
+  where (sectionContent, rest) = break isTitle bs
+
+isTitle :: Block -> Bool
+isTitle (Header 1 _ _) = True
+isTitle  _             = False
+
+walkSlides :: [Description] -> Chapter -> Pandoc
+walkSlides descs (Chapter file doc) = Pandoc m content
+  where Pandoc m bs = doc
+        content     = titleSlide : slides
+        titleSlide  = chapterTitle key title'
+        slides      = concatMap (replaceSourceBlock descs) bs
+        key         = dropExtension.takeFileName $ file
+        title'      = key -- TODO read presentation.yaml ?
+
+chapterTitle :: String -> String -> Block
+chapterTitle key title' = Header 1 attributes [Str title']
+  where attributes = (key, ["chapter-title"], [])
 
 replaceSourceBlock :: [Description] -> Block -> [Block]
-replaceSourceBlock descs original@(Para [Link _ contents (url, _)]) | isSourceUrl url =
-  case inlineLink descs url of
-    Just b  -> [Para contents, b]
-    Nothing -> [original]
+replaceSourceBlock descs original@(Para [Link _ contents (url, _)]) | isSourceUrl url = expandLink (inlineLink descs url)
+  where expandLink (Just b) = [Para contents, b]
+        expandLink Nothing  = [original]
 replaceSourceBlock _ b = [b]
 
 isSourceUrl :: String -> Bool
@@ -57,12 +86,11 @@ loadSource :: [Description] -> String -> Maybe String
 loadSource descs url = parseUrl url >>= lookupSource descs
 
 parseUrl :: String -> Maybe (ModuleName, String)
-parseUrl url =
-  case tokens of
-    [m, f] -> Just (m, f)
-    _      -> Nothing
-  where tokens = splitOn '/' suffix
-        suffix = drop (length "source://") url
+parseUrl url = toPair tokens
+  where tokens        = splitOn '/' suffix
+        suffix        = drop (length "source://") url
+        toPair [m, f] = Just (m, f)
+        toPair _      = Nothing
 
 splitOn :: Char -> String -> [String]
 splitOn c s =

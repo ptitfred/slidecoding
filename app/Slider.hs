@@ -39,9 +39,8 @@ newline = putStrLn ""
 process :: FilePath -> IO ()
 process dir = withProject dir $ \(slides, descs) -> do
   createDirectoryIfMissing True distDir
-  processSlides descs slides outFile
+  processSlides descs slides distDir
     where distDir = dir </> "dist"
-          outFile = distDir </> "index.html"
 
 index :: FilePath -> IO ()
 index path = loadExposedModules path >>= maybe noModule someModules
