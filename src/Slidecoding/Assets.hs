@@ -7,23 +7,25 @@ module Slidecoding.Assets
     , include
     ) where
 
+import Slidecoding.Types                  (Presentation(..))
+
 import Paths_slidecoding                  (getDataFileName)
 
 import Data.Monoid                        ((<>))
 import Data.String                        (IsString(..), fromString)
-import System.Directory                   (copyFile, createDirectoryIfMissing)
+import System.Directory                   (copyFile, createDirectoryIfMissing, doesFileExist)
 import System.FilePath                    ((</>), takeDirectory)
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (title)
 
 data Asset = CSS String | JS String | InlineJS String | Favicon String | Bundle [Asset]
 
-distribute :: FilePath -> Asset -> IO ()
-distribute directory (Bundle assets) = mapM_ (distribute directory) assets
-distribute directory (CSS      path) = distribute' directory path
-distribute directory (JS       path) = distribute' directory path
-distribute         _ (InlineJS    _) = return ()
-distribute directory (Favicon  path) = distribute' directory path
+distribute :: Presentation -> Asset -> IO ()
+distribute presentation (Bundle assets) = mapM_ (distribute presentation) assets
+distribute presentation (CSS      path) = distribute' presentation path
+distribute presentation (JS       path) = distribute' presentation path
+distribute            _ (InlineJS    _) = return ()
+distribute presentation (Favicon  path) = distribute' presentation path
 
 include :: Asset -> Html
 include (CSS         path) = css     (fromString path)
@@ -39,11 +41,19 @@ instance Monoid Asset where
   mappend         a1  (Bundle b2) = Bundle (a1 : b2)
   mappend         a1          a2  = Bundle [a1, a2]
 
-distribute' :: FilePath -> FilePath -> IO ()
-distribute' directory filename = getOriginal >>= copy
-  where getOriginal = getDataFileName filename
+distribute' :: Presentation -> FilePath -> IO ()
+distribute' presentation filename = getOriginal >>= copy
+  where getOriginal = findOriginal (rootDir presentation) filename
         copy from   = safeCopyFile from to
-        to          = directory </> filename
+        to          = distDir presentation </> filename
+
+findOriginal :: FilePath -> FilePath -> IO FilePath
+findOriginal directory filename = do
+  let localFile = directory </> filename
+  localExists <- doesFileExist localFile
+  if localExists
+  then return localFile
+  else getDataFileName filename
 
 safeCopyFile :: FilePath -> FilePath -> IO ()
 safeCopyFile from to = do

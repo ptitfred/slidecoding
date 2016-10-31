@@ -1,14 +1,13 @@
 module Main (main) where
 
-import           Slidecoding             (browse, indexIO, loadExposedModules, load, processSlides)
-import           Slidecoding.Types
+import Slidecoding        (browse, indexIO, loadExposedModules, load, processSlides)
+import Slidecoding.Types
 
-import           Control.Monad           ((>=>))
-import           Data.List               (isSuffixOf)
-import qualified Data.Text.IO       as T
-import           System.Environment      (getArgs)
-import           System.FilePath         ((</>))
-import           System.Directory        (createDirectoryIfMissing, getDirectoryContents, doesDirectoryExist)
+import Control.Monad      ((>=>))
+import Data.List          (isSuffixOf)
+import System.Directory   (createDirectoryIfMissing, getDirectoryContents, doesDirectoryExist)
+import System.Environment (getArgs)
+import System.FilePath    ((</>))
 
 data Config = Config FilePath Action
 data Action = Check | ProcessSlides | Index | Serve
@@ -25,7 +24,7 @@ run (Config f Serve)         = serve f
 check :: FilePath -> IO ()
 check f = do
   checkPresentation f
-  withProject f $ \(slides, descs) -> do
+  withProject f $ \(_, slides, descs) -> do
     newline
     putStrLn "Slides:"
     describeSlides slides
@@ -37,10 +36,9 @@ newline :: IO ()
 newline = putStrLn ""
 
 process :: FilePath -> IO ()
-process dir = withProject dir $ \(slides, descs) -> do
-  createDirectoryIfMissing True distDir
-  processSlides descs slides distDir
-    where distDir = dir </> "dist"
+process dir = withProject dir $ \(presentation, slides, descs) -> do
+  createDirectoryIfMissing True (distDir presentation)
+  processSlides presentation descs slides
 
 index :: FilePath -> IO ()
 index path = loadExposedModules path >>= maybe noModule someModules
@@ -51,13 +49,20 @@ index path = loadExposedModules path >>= maybe noModule someModules
 serve :: FilePath -> IO ()
 serve f = withProject f $ \_ -> putStrLn ("Serving " ++ f)
 
-type Project = ([FilePath], [Description])
+type Project = (Presentation, [FilePath], [Description])
 
 withProject :: FilePath -> (Project -> IO ()) -> IO ()
-withProject f action = onlyWithDirectory f $ loadProject f >>= action
+withProject f action = onlyWithDirectory f $ loadProject f >>= either putStrLn action
 
-loadProject :: FilePath -> IO Project
-loadProject f = (,) <$> loadSlides f <*> loadModules f
+type Check = Either ValidationMessage
+
+loadProject :: FilePath -> IO (Check Project)
+loadProject f = load f >>= loadProject' f
+
+loadProject' :: FilePath -> Check Presentation -> IO (Check Project)
+loadProject' f (Right p) = right <$> loadSlides f <*> loadModules f
+  where right s m = Right (p, s, m)
+loadProject' _ (Left vm) = return (Left vm)
 
 onlyWithDirectory :: FilePath -> IO () -> IO ()
 onlyWithDirectory f action = do
@@ -98,13 +103,13 @@ listFiles predicate path = do
 withConfig :: (Config -> IO ()) -> IO ()
 withConfig action = getConfig >>= maybe usage action
 
-printResult :: Either ValidationMessage Presentation -> IO ()
+printResult :: Check Presentation -> IO ()
 printResult = either putStrLn printPresentation
 
 printPresentation :: Presentation -> IO ()
 printPresentation p = do
   putStr "Generating presentation '"
-  T.putStr . title . meta $ p
+  putStr . title . meta $ p
   putStrLn $ "' from " ++ rootDir p
 
 printDescriptions :: [Description] -> IO ()

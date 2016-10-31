@@ -12,25 +12,27 @@ import Data.List                         (find, isPrefixOf)
 import Data.Map                          (lookup)
 import Data.Maybe                        (fromMaybe)
 import System.FilePath                   ((</>), dropExtension,takeFileName)
-import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr, nullMeta, readMarkdown, writePlain, writeHtml)
+import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr
+                                        , nullMeta, readMarkdown, writePlain, writeHtml)
 import Text.Pandoc.Definition            (MetaValue(..))
 
-processSlides :: [Description] -> [FilePath] -> FilePath -> IO ()
-processSlides descs chapters dist = do
-  distributeAssets cfg dist
-  document <- joinSections cfg <$> mapM (eachChapter descs) chapters
+processSlides :: Presentation -> [Description] -> [FilePath] -> IO ()
+processSlides presentation descs chapters = do
+  distributeAssets presentation
+  document <- joinSections presentation <$> mapM (eachChapter descs) chapters
   writeFile outputFile document
-    where outputFile = dist </> "index.html"
-          cfg        = Configuration 1600 1000 Neon -- TODO extract it from presentation.yaml
+    where outputFile = distDir presentation </> "index.html"
 
 eachChapter :: [Description] -> FilePath -> IO (FilePath, Pandoc)
 eachChapter descs file = pipeline <$> readFile file
   where pipeline = (,) file . walkSlides descs . readChapter file
 
-joinSections :: Configuration -> [(FilePath, Pandoc)] -> String
-joinSections cfg slides = renderHtml (template cfg title' content)
+joinSections :: Presentation -> [(FilePath, Pandoc)] -> String
+joinSections presentation slides = renderHtml (template design' title' content)
   where content = mconcat $ mconcat (writeSection <$> slides)
-        title'  = "My presentation"       -- TODO extract it from presentation.yaml
+        meta'   = meta presentation
+        title'  = title meta'
+        design' = design meta'
 
 data Chapter = Chapter FilePath Pandoc
 newtype Section = Section [Block]
