@@ -21,9 +21,9 @@ processSlides descs chapters dist = do
           outputFile    = dist </> "index.html"
 
 joinSections :: [Pandoc] -> String
-joinSections slides = renderHtml (template title content)
+joinSections slides = renderHtml (template title' content)
   where content = mconcat $ mconcat (writeSection <$> slides)
-        title   = "My presentation" -- TODO extract it from presentation.yaml
+        title'  = "My presentation" -- TODO extract it from presentation.yaml
 
 data Chapter = Chapter FilePath Pandoc
 newtype Section = Section [Block]

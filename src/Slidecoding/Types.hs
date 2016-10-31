@@ -4,17 +4,21 @@ module Slidecoding.Types
     ( Context(..)
     , Description(..)
     , Item(..)
+    , Metadata(..)
     , Module(..)
     , ModuleName
     , Name
     , Port
+    , Presentation(..)
     , Signature(..)
     , Source(..)
     , Stream(..)
     , Symbol(..)
+    , ValidationMessage
     , singleModuleContext
     ) where
 
+import Data.Text       (Text)
 import System.FilePath ((</>), (<.>))
 
 type Port = Int
@@ -44,3 +48,12 @@ data Context = Context { name            :: Name         -- A name for debugging
                        , modules         :: [ModuleName] -- Modules to import
                        , topLevelModules :: [ModuleName] -- Modules to interpret (private elems will be available)
                        }
+
+data Presentation = Presentation { rootDir :: FilePath
+                                 , meta    :: Metadata
+                                 } deriving Show
+
+data Metadata = Metadata { title :: Text
+                         } deriving Show
+
+type ValidationMessage = String

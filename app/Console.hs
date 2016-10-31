@@ -1,6 +1,7 @@
 module Main (main) where
 
-import Slidecoding        (Port, ModuleName, singleModuleContext, start)
+import Slidecoding        (start)
+import Slidecoding.Types
 
 import Data.Char          (isDigit)
 import System.Environment (getArgs)
