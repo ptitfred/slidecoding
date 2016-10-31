@@ -32,7 +32,8 @@ library
   hs-source-dirs:      src
   exposed-modules:     Slidecoding
                      , Slidecoding.Types
-  other-modules:       Slidecoding.Browser
+  other-modules:       Slidecoding.Assets
+                     , Slidecoding.Browser
                      , Slidecoding.CabalHelper
                      , Slidecoding.GHCI
                      , Slidecoding.Indexer
