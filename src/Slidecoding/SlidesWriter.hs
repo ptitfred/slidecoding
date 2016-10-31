@@ -17,20 +17,20 @@ import Text.Pandoc.Definition            (MetaValue(..))
 
 processSlides :: [Description] -> [FilePath] -> FilePath -> IO ()
 processSlides descs chapters dist = do
-  distributeAssets dist
-  document <- joinSections <$> mapM (eachChapter descs) chapters
+  distributeAssets cfg dist
+  document <- joinSections cfg <$> mapM (eachChapter descs) chapters
   writeFile outputFile document
     where outputFile = dist </> "index.html"
+          cfg        = Configuration 1600 1000 Neon -- TODO extract it from presentation.yaml
 
 eachChapter :: [Description] -> FilePath -> IO (FilePath, Pandoc)
 eachChapter descs file = pipeline <$> readFile file
   where pipeline = (,) file . walkSlides descs . readChapter file
 
-joinSections :: [(FilePath, Pandoc)] -> String
-joinSections slides = renderHtml (template cfg title' content)
+joinSections :: Configuration -> [(FilePath, Pandoc)] -> String
+joinSections cfg slides = renderHtml (template cfg title' content)
   where content = mconcat $ mconcat (writeSection <$> slides)
         title'  = "My presentation"       -- TODO extract it from presentation.yaml
-        cfg     = Configuration 1600 1000 -- TODO extract it from presentation.yaml
 
 data Chapter = Chapter FilePath Pandoc
 newtype Section = Section [Block]
