@@ -5,6 +5,7 @@ module Slidecoding.Template
     , mkSection
     , template
     , wrapSection
+    , asComment
     -- Reexport Text.Blaze utilities:
     , Html
     , renderHtml
@@ -88,6 +89,9 @@ mkSection ""  [] = wrapSection
 mkSection id' [] = wrapSection ! id (fromString id')
 mkSection ""  cs = wrapSection                       ! class_ (fromString (unwords cs))
 mkSection id' cs = wrapSection ! id (fromString id') ! class_ (fromString (unwords cs))
+
+asComment :: String -> Html
+asComment = stringComment
 
 installHighlightJS :: Html
 installHighlightJS = do

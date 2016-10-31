@@ -5,21 +5,28 @@ module Slidecoding.SlidesWriter
 import Slidecoding.Template
 import Slidecoding.Types
 
+import Prelude                           hiding (lookup)
+
 import Codec.Binary.Base64.String as B64 (decode)
 import Data.List                         (find, isPrefixOf)
+import Data.Map                          (lookup)
+import Data.Maybe                        (fromMaybe)
 import System.FilePath                   ((</>), dropExtension,takeFileName)
-import Text.Pandoc                       (Pandoc(..), Block(..), Inline(..), def, nullAttr, nullMeta, readMarkdown, writeHtml)
+import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr, nullMeta, readMarkdown, writePlain, writeHtml)
+import Text.Pandoc.Definition            (MetaValue(..))
 
 processSlides :: [Description] -> [FilePath] -> FilePath -> IO ()
 processSlides descs chapters dist = do
   distributeAssets dist
-  document <- joinSections <$> mapM eachChapter chapters
+  document <- joinSections <$> mapM (eachChapter descs) chapters
   writeFile outputFile document
-    where eachChapter f = pipeline f <$> readFile f
-          pipeline f    = walkSlides descs . readChapter f
-          outputFile    = dist </> "index.html"
+    where outputFile = dist </> "index.html"
 
-joinSections :: [Pandoc] -> String
+eachChapter :: [Description] -> FilePath -> IO (FilePath, Pandoc)
+eachChapter descs file = pipeline <$> readFile file
+  where pipeline = (,) file . walkSlides descs . readChapter file
+
+joinSections :: [(FilePath, Pandoc)] -> String
 joinSections slides = renderHtml (template title' content)
   where content = mconcat $ mconcat (writeSection <$> slides)
         title'  = "My presentation" -- TODO extract it from presentation.yaml
@@ -37,8 +44,8 @@ offsetHeaders :: Int -> Block -> Block
 offsetHeaders off (Header n attrs blocks) = Header (n + off) attrs blocks
 offsetHeaders _ b = b
 
-writeSection :: Pandoc -> [Html]
-writeSection (Pandoc _ blocks) = writeSection' <$> sections
+writeSection :: (FilePath, Pandoc) -> [Html]
+writeSection (file, Pandoc _ blocks) = asComment file : (writeSection' <$> sections)
   where sections = groupBySection blocks
 
 writeSection' :: Section -> Html
@@ -69,7 +76,13 @@ walkSlides descs (Chapter file doc) = Pandoc m content
         titleSlide  = chapterTitle key title'
         slides      = map (offsetHeaders 1) $ concatMap (replaceSourceBlock descs) bs
         key         = dropExtension.takeFileName $ file
-        title'      = key -- TODO read presentation.yaml ?
+        title'      = fromMaybe key (readTitle m)
+
+readTitle :: Meta -> Maybe String
+readTitle (Meta attrs) = lookup "title" attrs >>= expectString
+  where expectString (MetaInlines is) = Just (writePlain def (Pandoc nullMeta [Plain is]))
+        expectString (MetaString   s) = Just s
+        expectString  _               = Nothing
 
 chapterTitle :: String -> String -> Block
 chapterTitle key title' = Header 1 attributes [Str title']

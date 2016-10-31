@@ -1,3 +1,7 @@
+---
+title: 'Chapter 1'
+...
+
 # A glance at Monad {.pedantic}
 
 [Imperative code enforced](source://Example1/parseCSV)
