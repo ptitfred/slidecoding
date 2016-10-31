@@ -1,4 +1,4 @@
-# Slidecoding - a mix of slides and code
+# Slidecoding — a mix of slides and code
 
 Mix markdown slides and source code.
 
