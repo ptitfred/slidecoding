@@ -27,9 +27,10 @@ eachChapter descs file = pipeline <$> readFile file
   where pipeline = (,) file . walkSlides descs . readChapter file
 
 joinSections :: [(FilePath, Pandoc)] -> String
-joinSections slides = renderHtml (template title' content)
+joinSections slides = renderHtml (template cfg title' content)
   where content = mconcat $ mconcat (writeSection <$> slides)
-        title'  = "My presentation" -- TODO extract it from presentation.yaml
+        title'  = "My presentation"       -- TODO extract it from presentation.yaml
+        cfg     = Configuration 1600 1000 -- TODO extract it from presentation.yaml
 
 data Chapter = Chapter FilePath Pandoc
 newtype Section = Section [Block]

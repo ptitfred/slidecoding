@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Slidecoding.Template
-    ( distributeAssets
+    ( Configuration(..)
+    , distributeAssets
     , mkSection
     , template
     , wrapSection
@@ -15,8 +16,10 @@ import Slidecoding.Assets
 
 import Prelude                     hiding (id, head, div)
 
+import Data.Aeson                         (ToJSON(..), encode, object, (.=))
+import Data.ByteString.Lazy.Char8         (unpack)
 import Data.String                        (IsString(..), fromString)
-import Text.Blaze.Html5
+import Text.Blaze.Html5            hiding (object)
 import Text.Blaze.Html5.Attributes hiding (title)
 import Text.Blaze.Html.Renderer.String    (renderHtml)
 
@@ -37,6 +40,7 @@ deckjs = -- Dependencies before core otherwise core doesn't boot
          deckjsDependencies
       <> deckjsCore
       <> deckjsTheme
+      <> deckjsExtensions
 
 deckjsCore :: Asset
 deckjsCore = JS "deckjs/core/deck.core.js" <> CSS "deckjs/core/deck.core.css"
@@ -49,8 +53,15 @@ deckjsDependencies = jquery <> modernizr
 deckjsTheme :: Asset
 deckjsTheme = CSS "deckjs/themes/style/web-2.0.css"
 
-template :: String -> Html -> Html
-template titleText slides = do
+deckjsExtensions :: Asset
+deckjsExtensions = extensionFit
+
+extensionFit :: Asset
+extensionFit = CSS "deckjs/extensions/fit/deck.fit-fs.css"
+            <> JS  "deckjs/extensions/fit/deck.fit.js"
+
+template :: Configuration -> String -> Html -> Html
+template cfg titleText slides = do
   docType
   html $ do
     head $ do
@@ -60,7 +71,7 @@ template titleText slides = do
       include deckjs
     body ! class_ "deck-container" $ do
       slides
-      include bootDeckJS
+      include $ bootDeckJS cfg
 
 mkSection :: String   -- id of the section element
           -> [String] -- classes of the section element
@@ -73,8 +84,17 @@ mkSection id' cs = wrapSection ! id (fromString id') ! class_ (fromString (unwor
 asComment :: String -> Html
 asComment = stringComment
 
-bootDeckJS :: Asset
-bootDeckJS = InlineJS "$(function() { $.deck('.slide'); });"
+type Pixel = Int
+data Configuration = Configuration { designWidth  :: Pixel
+                                   , designHeight :: Pixel
+                                   }
+
+instance ToJSON Configuration where
+  toJSON (Configuration w h) = object [ "designWidth" .= w, "designHeight" .= h ]
+
+bootDeckJS :: Configuration -> Asset
+bootDeckJS cfg = InlineJS $ "$(function() { $.deck('.slide', " ++ encode' cfg ++ " ); });"
+  where encode' = unpack . encode
 
 wrapSection :: Html -> Html
 wrapSection = section ! class_ "slide"
