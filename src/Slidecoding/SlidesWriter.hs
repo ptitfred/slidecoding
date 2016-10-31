@@ -5,10 +5,15 @@ module Slidecoding.SlidesWriter
 import Slidecoding.Template
 import Slidecoding.Types
 
+import Prelude                           hiding (lookup)
+
 import Codec.Binary.Base64.String as B64 (decode)
 import Data.List                         (find, isPrefixOf)
+import Data.Map                          (lookup)
+import Data.Maybe                        (fromMaybe)
 import System.FilePath                   ((</>), dropExtension,takeFileName)
-import Text.Pandoc                       (Pandoc(..), Block(..), Inline(..), def, nullAttr, nullMeta, readMarkdown, writeHtml)
+import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr, nullMeta, readMarkdown, writePlain, writeHtml)
+import Text.Pandoc.Definition            (MetaValue(..))
 
 processSlides :: [Description] -> [FilePath] -> FilePath -> IO ()
 processSlides descs chapters dist = do
@@ -69,7 +74,13 @@ walkSlides descs (Chapter file doc) = Pandoc m content
         titleSlide  = chapterTitle key title'
         slides      = map (offsetHeaders 1) $ concatMap (replaceSourceBlock descs) bs
         key         = dropExtension.takeFileName $ file
-        title'      = key -- TODO read presentation.yaml ?
+        title'      = fromMaybe key (readTitle m)
+
+readTitle :: Meta -> Maybe String
+readTitle (Meta attrs) = lookup "title" attrs >>= expectString
+  where expectString (MetaInlines is) = Just (writePlain def (Pandoc nullMeta [Plain is]))
+        expectString (MetaString   s) = Just s
+        expectString  _               = Nothing
 
 chapterTitle :: String -> String -> Block
 chapterTitle key title' = Header 1 attributes [Str title']
