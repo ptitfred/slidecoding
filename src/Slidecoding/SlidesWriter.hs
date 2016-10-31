@@ -2,9 +2,8 @@ module Slidecoding.SlidesWriter
     ( processSlides
     ) where
 
-import Slidecoding.Types
-
 import Slidecoding.Template
+import Slidecoding.Types
 
 import Codec.Binary.Base64.String as B64 (decode)
 import Data.List                         (find, isPrefixOf)
@@ -34,16 +33,22 @@ readChapter f s = either handleFailure buildChapter parse
         buildChapter  = Chapter f
         handleFailure = error . show
 
+offsetHeaders :: Int -> Block -> Block
+offsetHeaders off (Header n attrs blocks) = Header (n + off) attrs blocks
+offsetHeaders _ b = b
+
 writeSection :: Pandoc -> [Html]
 writeSection (Pandoc _ blocks) = writeSection' <$> sections
   where sections = groupBySection blocks
 
 writeSection' :: Section -> Html
-writeSection' (Section (Header 1 (id', classes, properties) titleContent : blocks)) = section $ writeHtml def section'
-  where section' = Pandoc nullMeta (Header 1 ("", [], properties) titleContent : blocks)
-        section = mkSection id' classes
-writeSection' (Section content) = wrapSection $ writeHtml def section'
-  where section' = Pandoc nullMeta content
+writeSection' (Section (Header n (id', classes, properties) titleContent : blocks)) =
+  section $ writeHtml def section'
+    where section' = Pandoc nullMeta (Header n ("", [], properties) titleContent : blocks)
+          section = mkSection id' classes
+writeSection' (Section content) =
+  wrapSection $ writeHtml def section'
+    where section' = Pandoc nullMeta content
 
 groupBySection :: [Block] -> [Section]
 groupBySection [] = []
@@ -54,6 +59,7 @@ groupBySection bs = Section sectionContent : groupBySection rest
 
 isTitle :: Block -> Bool
 isTitle (Header 1 _ _) = True
+isTitle (Header 2 _ _) = True
 isTitle  _             = False
 
 walkSlides :: [Description] -> Chapter -> Pandoc
@@ -61,7 +67,7 @@ walkSlides descs (Chapter file doc) = Pandoc m content
   where Pandoc m bs = doc
         content     = titleSlide : slides
         titleSlide  = chapterTitle key title'
-        slides      = concatMap (replaceSourceBlock descs) bs
+        slides      = map (offsetHeaders 1) $ concatMap (replaceSourceBlock descs) bs
         key         = dropExtension.takeFileName $ file
         title'      = key -- TODO read presentation.yaml ?
 
