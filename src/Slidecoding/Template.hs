@@ -15,8 +15,8 @@ import Prelude                     hiding (id, head, div)
 import Paths_slidecoding                  (getDataFileName)
 
 import Data.String                        (IsString(..), fromString)
-import System.Directory                   (copyFile)
-import System.FilePath                    ((</>))
+import System.Directory                   (copyFile, createDirectoryIfMissing)
+import System.FilePath                    ((</>), takeDirectory)
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (title)
 import Text.Blaze.Html.Renderer.String   (renderHtml)
@@ -24,33 +24,62 @@ import Text.Blaze.Html.Renderer.String   (renderHtml)
 distributeAssets :: FilePath -> IO ()
 distributeAssets directory = mapM_ (distribute directory) files
   where files = [ defaultIcon
-                , baseStylesheet
                 , highlightJS
                 , highlightStyle
-                ]
+                , jquery
+                , modernizr
+                , deckjsScript
+                ] ++ deckjsStylesheets
 
-defaultIcon, baseStylesheet, highlightJS, highlightStyle :: IsString a => a
+defaultIcon, highlightJS, highlightStyle :: IsString a => a
 defaultIcon    = "lambda.png"
-baseStylesheet = "slidecoding.css"
 highlightJS    = "highlight-pack-haskell.js"
 highlightStyle = "paraiso-dark-min.css"
+
+jquery, modernizr, deckjsScript, deckjsStyle :: IsString a => a
+jquery       = "deckjs/jquery.min.js"
+modernizr    = "deckjs/modernizr.custom.js"
+deckjsScript = "deckjs/core/deck.core.js"
+deckjsStyle  = "deckjs/core/deck.core.css"
+
+deckjsStylesheets :: IsString a => [a]
+deckjsStylesheets = deckjsStyle : deckjsExtensions ++ deckjsThemes
+
+deckjsExtensions :: IsString a => [a]
+deckjsExtensions = [ "deckjs/extensions/goto/deck.goto.css"
+                   , "deckjs/extensions/menu/deck.menu.css"
+                   , "deckjs/extensions/navigation/deck.navigation.css"
+                   , "deckjs/extensions/status/deck.status.css"
+                   , "deckjs/extensions/scale/deck.scale.css"
+                   ]
+
+deckjsThemes :: IsString a => [a]
+deckjsThemes = [ "deckjs/themes/style/web-2.0.css"
+               ]
 
 distribute :: FilePath -> FilePath -> IO ()
 distribute directory filename = getOriginal >>= copy
   where getOriginal = getDataFileName filename
-        copy from   = copyFile from to
+        copy from   = safeCopyFile from to
         to          = directory </> filename
 
+safeCopyFile :: FilePath -> FilePath -> IO ()
+safeCopyFile from to = do
+  createDirectoryIfMissing True (takeDirectory to)
+  copyFile from to
+
 template :: String -> Html -> Html
-template titleText slides =
+template titleText slides = do
+  docType
   html $ do
     head $ do
       title' titleText
       favicon defaultIcon
-      css baseStylesheet
       installHighlightJS
-    body $
-      div ! id (fromString "slides") $ slides
+      installDeckJS
+    body ! class_ "deck-container" $ do
+      slides
+      bootDeckJS
 
 mkSection :: String   -- id of the section element
           -> [String] -- classes of the section element
@@ -66,8 +95,18 @@ installHighlightJS = do
   script' highlightJS
   javascript "hljs.initHighlightingOnLoad();"
 
+installDeckJS :: Html
+installDeckJS = do
+  mapM_ css deckjsStylesheets
+  script' jquery
+  script' modernizr
+  script' deckjsScript
+
+bootDeckJS :: Html
+bootDeckJS = javascript "$(function() { $.deck('.slide'); });"
+
 wrapSection :: Html -> Html
-wrapSection = section
+wrapSection = section ! class_ "slide"
 
 favicon, css, script' :: AttributeValue -> Html
 favicon file = link ! rel "icon"

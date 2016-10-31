@@ -13,7 +13,20 @@ build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 data-dir:            web
-data-files:          *.css *.html *.png *.js
+data-files:          highlight-pack-haskell.js
+                   , lambda.png
+                   , paraiso-dark-min.css
+                   , deckjs/jquery.min.js
+                   , deckjs/modernizr.custom.js
+                   , deckjs/core/deck.core.js
+                   , deckjs/core/deck.core.css
+                   , deckjs/extensions/goto/deck.goto.css
+                   , deckjs/extensions/menu/deck.menu.css
+                   , deckjs/extensions/navigation/deck.navigation.css
+                   , deckjs/extensions/status/deck.status.css
+                   , deckjs/extensions/scale/deck.scale.css
+                   , deckjs/themes/style/*.css
+                   , deckjs/themes/transition/*.css
 
 library
   hs-source-dirs:      src
