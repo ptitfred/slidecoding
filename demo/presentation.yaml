@@ -1,2 +1,9 @@
 ---
 title: Haskell for the noobs
+design:
+  width:  1600
+  height: 1000
+  icon:   "assets/icon.png"
+  theme:
+    base: neon
+    custom: "assets/custom.css"

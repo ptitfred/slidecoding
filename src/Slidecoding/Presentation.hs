@@ -6,29 +6,17 @@ module Slidecoding.Presentation
 
 import Slidecoding.Types
 
-import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
 import Data.Either      (isRight)
 import Data.Yaml        (decodeFileEither, ParseException)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath  ((</>))
-
-newtype MetadataWrapper = MetadataWrapper Metadata
-
-unwrapMetadata :: MetadataWrapper -> Metadata
-unwrapMetadata (MetadataWrapper m) = m
-
-instance FromJSON MetadataWrapper where
-  parseJSON (Object v) = MetadataWrapper . Metadata <$> v .: "title"
-  parseJSON (Array _)  = return $ MetadataWrapper (Metadata "array")
-  parseJSON invalid    = typeMismatch "Metadata" invalid
 
 type Validation = Maybe ValidationMessage
 type Validator = FilePath -> IO Validation
 
 load :: FilePath -> IO (Either ValidationMessage Presentation)
 load dir = checkAll (expectations dir) >>= hopefullyReturn loadPresentation
-  where loadPresentation = fmap (Presentation dir) <$> loadYaml (dir </> "presentation.yaml")
+  where loadPresentation = fmap (Presentation dir (dir </> "dist")) <$> loadYaml (dir </> "presentation.yaml")
 
 expectations :: FilePath -> [IO Validation]
 expectations dir = [ expectDirectory dir
@@ -54,7 +42,7 @@ loadYaml p = either handleError Right <$> loadMetadata p
   where handleError e = Left ("Invalid Metadata: " ++ show e :: ValidationMessage)
 
 loadMetadata :: FilePath -> IO (Either ParseException Metadata)
-loadMetadata file = fmap unwrapMetadata <$> decodeFileEither file
+loadMetadata = decodeFileEither
 
 hopefullyReturn :: IO (Either ValidationMessage Presentation) -> Validation -> IO (Either ValidationMessage Presentation)
 hopefullyReturn action = maybe action (return . Left)
