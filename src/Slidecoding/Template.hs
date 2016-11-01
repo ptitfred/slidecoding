@@ -14,21 +14,45 @@ module Slidecoding.Template
     ) where
 
 import Slidecoding.Assets
-import Slidecoding.Types                  (Presentation, meta, design, Design(..), icon, Theme(..))
+import Slidecoding.Types                  (Presentation, rootDir, distDir, meta, design, Design(..), icon, Theme(..))
 
 import Prelude                     hiding (id, head, div)
 
+import Control.Monad                      (when)
 import Data.Aeson                         (ToJSON(..), encode, object, (.=))
 import Data.ByteString.Lazy.Char8         (unpack)
 import Data.Maybe                         (fromMaybe)
 import Data.String                        (IsString(..), fromString)
+import System.Directory                   (copyFile, createDirectoryIfMissing, doesDirectoryExist, getDirectoryContents)
+import System.FilePath                    ((</>))
 import Text.Blaze.Html5            hiding (object, meta)
 import Text.Blaze.Html5.Attributes hiding (title, height, width, icon)
 import Text.Blaze.Html.Renderer.String    (renderHtml)
 
 distributeAssets :: Presentation -> IO ()
-distributeAssets presentation = distribute presentation (bundle design')
-  where design' = design (meta presentation)
+distributeAssets presentation = do
+  distribute presentation (bundle design')
+  copyDirectory (rootDir presentation </> "assets") (distDir presentation </> "assets")
+    where design' = design (meta presentation)
+
+copyDirectory :: FilePath -> FilePath -> IO ()
+copyDirectory from to = do
+  isDirectory <- doesDirectoryExist from
+  when isDirectory (copyDirectoryContents from to)
+
+copyDirectoryContents :: FilePath -> FilePath -> IO ()
+copyDirectoryContents from to = getDirectoryContents from >>= mapM_ (copyElement from to)
+
+copyElement :: FilePath -> FilePath -> FilePath -> IO ()
+copyElement    _  _ "."  = return ()
+copyElement    _  _ ".." = return ()
+copyElement from to f    = do
+  let original = from </> f
+  let copy     = to   </> f
+  isDirectory <- doesDirectoryExist original
+  if isDirectory
+  then createDirectoryIfMissing True copy >> copyDirectoryContents original copy
+  else copyFile original copy
 
 bundle :: Design -> Asset
 bundle d = favicon d
