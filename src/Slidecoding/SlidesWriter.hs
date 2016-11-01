@@ -11,6 +11,7 @@ import Codec.Binary.Base64.String as B64 (decode)
 import Data.List                         (find, isPrefixOf)
 import Data.Map                          (lookup)
 import Data.Maybe                        (fromMaybe)
+import Data.Monoid                       ((<>))
 import System.FilePath                   ((</>), dropExtension,takeFileName)
 import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr
                                         , nullMeta, readMarkdown, writePlain, writeHtml)
@@ -28,11 +29,26 @@ eachChapter descs file = pipeline <$> readFile file
   where pipeline = (,) file . walkSlides descs . readChapter file
 
 joinSections :: Presentation -> [(FilePath, Pandoc)] -> String
-joinSections presentation slides = renderHtml (template design' title' content)
-  where content = mconcat $ mconcat (writeSection <$> slides)
+joinSections presentation slides = renderHtml (template design' title' document)
+  where document   = titleSlide <> content
+        content    = mconcatWith writeSection slides
+        meta'      = meta presentation
+        titleSlide = writeSection (titleSection presentation)
+        title'     = title meta'
+        design'    = design meta'
+
+titleSection :: Presentation -> (FilePath, Pandoc)
+titleSection presentation = (file, doc)
+  where file    = rootDir presentation </> "presentation.yaml"
+        doc     = Pandoc nullMeta [block]
+        block   = Header 1 ("", classes, []) [inline]
+        classes = ["presentation-title"]
+        inline  = Str title'
         meta'   = meta presentation
         title'  = title meta'
-        design' = design meta'
+
+mconcatWith :: (Monoid b) => (a -> b) -> [a] -> b
+mconcatWith m = mconcat . fmap m
 
 data Chapter = Chapter FilePath Pandoc
 newtype Section = Section [Block]
@@ -47,8 +63,8 @@ offsetHeaders :: Int -> Block -> Block
 offsetHeaders off (Header n attrs blocks) = Header (n + off) attrs blocks
 offsetHeaders _ b = b
 
-writeSection :: (FilePath, Pandoc) -> [Html]
-writeSection (file, Pandoc _ blocks) = asComment file : (writeSection' <$> sections)
+writeSection :: (FilePath, Pandoc) -> Html
+writeSection (file, Pandoc _ blocks) = asComment file <> mconcatWith writeSection' sections
   where sections = groupBySection blocks
 
 writeSection' :: Section -> Html
