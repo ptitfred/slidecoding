@@ -79,10 +79,8 @@ template cfg titleText slides = do
 mkSection :: String   -- id of the section element
           -> [String] -- classes of the section element
           -> Html -> Html
-mkSection ""  [] = wrapSection
-mkSection id' [] = wrapSection ! id (fromString id')
-mkSection ""  cs = wrapSection                       ! class_ (fromString (unwords cs))
-mkSection id' cs = wrapSection ! id (fromString id') ! class_ (fromString (unwords cs))
+mkSection ""  cs = section                       ! class_ (fromString (unwords $ "slide" : cs))
+mkSection id' cs = section ! id (fromString id') ! class_ (fromString (unwords $ "slide" : cs))
 
 asComment :: String -> Html
 asComment = stringComment
@@ -103,7 +101,7 @@ bootDeckJS cfg = InlineJS $ "$(function() { $.deck('.slide', " ++ encode' cfg ++
   where encode' = unpack . encode
 
 wrapSection :: Html -> Html
-wrapSection = section ! class_ "slide"
+wrapSection = mkSection "" []
 
 title' :: String -> Html
 title' = title . toHtml
