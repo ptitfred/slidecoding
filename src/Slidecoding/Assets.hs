@@ -18,17 +18,19 @@ import System.FilePath                    ((</>), takeDirectory)
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (title)
 
-data Asset = CSS String | JS String | InlineJS String | Favicon String | Bundle [Asset]
+data Asset = CSS String | CSSPrint String | JS String | InlineJS String | Favicon String | Bundle [Asset]
 
 distribute :: Presentation -> Asset -> IO ()
 distribute presentation (Bundle assets) = mapM_ (distribute presentation) assets
-distribute presentation (CSS      path) = distribute' presentation path
-distribute presentation (JS       path) = distribute' presentation path
 distribute            _ (InlineJS    _) = return ()
+distribute presentation (CSS      path) = distribute' presentation path
+distribute presentation (CSSPrint path) = distribute' presentation path
+distribute presentation (JS       path) = distribute' presentation path
 distribute presentation (Favicon  path) = distribute' presentation path
 
 include :: Asset -> Html
-include (CSS         path) = css     (fromString path)
+include (CSS         path) = css "screen" (fromString path)
+include (CSSPrint    path) = css "print"  (fromString path)
 include (JS          path) = script' (fromString path)
 include (InlineJS source') = javascript source'
 include (Favicon     path) = favicon (fromString path)
@@ -60,12 +62,17 @@ safeCopyFile from to = do
   createDirectoryIfMissing True (takeDirectory to)
   copyFile from to
 
-favicon, css, script' :: AttributeValue -> Html
+favicon :: AttributeValue -> Html
 favicon file = link ! rel "icon"
                     ! type_ "image/png"
                     ! href file
-css     file = link ! rel "stylesheet"
-                    ! href file
+
+css :: AttributeValue -> AttributeValue -> Html
+css m file = link ! rel "stylesheet"
+                  ! media m
+                  ! href file
+
+script' :: AttributeValue -> Html
 script' file = script ! src file
                       $ toHtml empty
 

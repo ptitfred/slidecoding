@@ -20,6 +20,7 @@ data-files:          highlight-pack-haskell.js
                    , deckjs/modernizr.custom.js
                    , deckjs/core/deck.core.js
                    , deckjs/core/deck.core.css
+                   , deckjs/core/print.css
                    , deckjs/extensions/fit/deck.fit-fs.css
                    , deckjs/extensions/fit/deck.fit.js
                    , deckjs/themes/style/*.css

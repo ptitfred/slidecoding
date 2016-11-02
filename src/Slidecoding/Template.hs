@@ -79,7 +79,9 @@ deckjs d = -- Dependencies before core otherwise core doesn't boot
         <> deckjsExtensions
 
 deckjsCore :: Asset
-deckjsCore = JS "deckjs/core/deck.core.js" <> CSS "deckjs/core/deck.core.css"
+deckjsCore = JS "deckjs/core/deck.core.js"
+          <> CSS "deckjs/core/deck.core.css"
+          <> CSSPrint "deckjs/core/print.css"
 
 deckjsDependencies :: Asset
 deckjsDependencies = jquery <> modernizr
