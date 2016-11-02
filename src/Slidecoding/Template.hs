@@ -14,7 +14,7 @@ module Slidecoding.Template
     ) where
 
 import Slidecoding.Assets
-import Slidecoding.Types                  (Presentation, rootDir, distDir, meta, design, Design(..), icon, Theme(..))
+import Slidecoding.Types                  (Presentation, rootDir, distDir, metadata, design, Design(..), icon, Theme(..))
 
 import Prelude                     hiding (id, head, div)
 
@@ -25,7 +25,7 @@ import Data.Maybe                         (fromMaybe)
 import Data.String                        (IsString(..), fromString)
 import System.Directory                   (copyFile, createDirectoryIfMissing, doesDirectoryExist, getDirectoryContents)
 import System.FilePath                    ((</>))
-import Text.Blaze.Html5            hiding (object, meta)
+import Text.Blaze.Html5            hiding (object)
 import Text.Blaze.Html5.Attributes hiding (title, height, width, icon)
 import Text.Blaze.Html.Renderer.String    (renderHtml)
 
@@ -33,7 +33,7 @@ distributeAssets :: Presentation -> IO ()
 distributeAssets presentation = do
   distribute presentation (bundle design')
   copyDirectory (rootDir presentation </> "assets") (distDir presentation </> "assets")
-    where design' = design (meta presentation)
+    where design' = design (metadata presentation)
 
 copyDirectory :: FilePath -> FilePath -> IO ()
 copyDirectory from to = do
@@ -118,6 +118,8 @@ template d titleText slides = do
   docType
   html $ do
     head $ do
+      meta ! charset "utf-8"
+      meta ! httpEquiv "X-UA-Compatible" ! content "IE=edge,chrome=1"
       title' titleText
       include (favicon d)
       include highlightJS

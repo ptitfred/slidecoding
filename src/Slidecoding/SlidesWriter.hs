@@ -32,7 +32,7 @@ joinSections :: Presentation -> [(FilePath, Pandoc)] -> String
 joinSections presentation slides = renderHtml (template design' title' document)
   where document   = titleSlide <> content
         content    = mconcatWith writeSection slides
-        meta'      = meta presentation
+        meta'      = metadata presentation
         titleSlide = writeSection (titleSection presentation)
         title'     = title meta'
         design'    = design meta'
@@ -44,7 +44,7 @@ titleSection presentation = (file, doc)
         block   = Header 1 ("", classes, []) [inline]
         classes = ["presentation-title"]
         inline  = Str title'
-        meta'   = meta presentation
+        meta'   = metadata presentation
         title'  = title meta'
 
 mconcatWith :: (Monoid b) => (a -> b) -> [a] -> b
