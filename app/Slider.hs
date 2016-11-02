@@ -109,7 +109,7 @@ printResult = either putStrLn printPresentation
 printPresentation :: Presentation -> IO ()
 printPresentation p = do
   putStr "Generating presentation '"
-  putStr . title . meta $ p
+  putStr . title . metadata $ p
   putStrLn $ "' from " ++ rootDir p
 
 printDescriptions :: [Description] -> IO ()

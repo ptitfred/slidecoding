@@ -55,9 +55,9 @@ data Context = Context { name            :: Name         -- A name for debugging
                        , topLevelModules :: [ModuleName] -- Modules to interpret (private elems will be available)
                        }
 
-data Presentation = Presentation { rootDir :: FilePath
-                                 , distDir :: FilePath
-                                 , meta    :: Metadata
+data Presentation = Presentation { rootDir  :: FilePath
+                                 , distDir  :: FilePath
+                                 , metadata :: Metadata
                                  } deriving Show
 
 data Metadata = Metadata { title  :: String
