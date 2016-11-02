@@ -75,6 +75,7 @@ deckjs d = -- Dependencies before core otherwise core doesn't boot
            deckjsDependencies
         <> deckjsCore
         <> deckjsTheme (fromMaybe defaultTheme (theme d))
+        <> deckjsTransition None
         <> deckjsExtensions
 
 deckjsCore :: Asset
@@ -96,11 +97,19 @@ deckjsTheme (Patch t l) = deckjsTheme t <> CSS l
 deckjsTheme (Custom l)  = CSS l
 
 deckjsExtensions :: Asset
-deckjsExtensions = extensionFit
+deckjsExtensions = deckjsFitExtension
 
-extensionFit :: Asset
-extensionFit = CSS "deckjs/extensions/fit/deck.fit-fs.css"
-            <> JS  "deckjs/extensions/fit/deck.fit.js"
+deckjsFitExtension :: Asset
+deckjsFitExtension = CSS "deckjs/extensions/fit/deck.fit-fs.css"
+                  <> JS  "deckjs/extensions/fit/deck.fit.js"
+
+data NavigationStyle = None | HorizontalSlide | VerticalSlide | Fade
+
+deckjsTransition :: NavigationStyle -> Asset
+deckjsTransition None            = mempty
+deckjsTransition HorizontalSlide = CSS "deckjs/themes/transition/horizontal-slide.css"
+deckjsTransition VerticalSlide   = CSS "deckjs/themes/transition/vertical-slide.css"
+deckjsTransition Fade            = CSS "deckjs/themes/transition/fade.css"
 
 template :: Design -> String -> Html -> Html
 template d titleText slides = do
