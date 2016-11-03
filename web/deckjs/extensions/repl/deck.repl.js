@@ -35,17 +35,55 @@ function newConsole(element) {
   startPrompt();
 };
 
+function toggleOrder(i, order) {
+  switch (order) {
+    case '0': return '1';
+    default:  return '0';
+  }
+}
+
 (function($, deck, window, undefined) {
+  var $d = $(document);
+
+  /*
+    Extends defaults/options.
+
+    options.keys.repl
+    Key to toggle REPL position between left and right (right by default).
+  */
   $.extend(true, $[deck].defaults, {
     classes: {
       repl: 'deck-repl'
+    },
+    keys: {
+      repl: 84 // t
     }
   });
 
-  $(document).bind('deck.beforeInit', function() {
+  $d.bind('deck.beforeInit', function() {
     $.each($[deck]('getSlides'), function(i, $slide) {
       if ($slide.hasClass('repl')) {
         addReplToSlide($, $slide);
+      }
+    });
+  });
+
+  /*
+    jQuery.deck('toggleReplPosition')
+
+    Toggles REPL position (right column first).
+  */
+  $[deck]('extend', 'toggleReplPosition', function() {
+    $('.console').css('order', toggleOrder);
+  });
+
+  $d.bind('deck.init', function() {
+    var opts = $[deck]('getOptions');
+    // Bind key events
+    $d.unbind('keydown.deckrepl').bind('keydown.deckrepl', function(e) {
+      if (e.which === opts.keys.repl || $.inArray(e.which, opts.keys.repl) > -1) {
+        $[deck]('toggleReplPosition');
+        e.preventDefault();
       }
     });
   });
