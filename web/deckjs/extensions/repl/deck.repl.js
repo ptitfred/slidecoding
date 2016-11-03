@@ -19,19 +19,41 @@ function newConsole(element) {
     jqconsole.Write(text, 'jqconsole-output');
     startPrompt();
   };
+  var writeError = function(text) {
+    jqconsole.Write(text, 'jqconsole-error');
+    startPrompt();
+  }
+
+  var url = 'ws://echo.websocket.org/';
+  var connect = function () {
+    var ws = new WebSocket(url);
+    ws.onmessage = function(event) {
+      writeText(event.data);
+    };
+    ws.onerror = function(event) {
+      writeError("Connection error\n");
+    };
+    ws.onopen = function(event) {
+      writeText("Ready\n");
+    };
+    return ws;
+  }
+  var ws = connect();
 
   var startPrompt = function () {
-    jqconsole.RegisterMatching('(', ')', 'brackets');
-
-    // Start the prompt with history enabled.
     jqconsole.Prompt(true, function (input) {
-      if (input !== '') {
-        writeText(input);
+      if (input === '/reconnect') {
+        ws = connect();
+      } else if (input !== '') {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(input);
+        } else {
+          writeError("Not connected.");
+        }
       }
     });
   };
 
-  writeText('(Echo only for demo.)');
   startPrompt();
 };
 
