@@ -13,6 +13,13 @@ function addReplToSlide($, $slide) {
   content($slide).wrapAll('<div class="slide-columns"></div>');
 }
 
+function protocol() {
+  switch (location.protocol) {
+    case 'https:': return 'wss:';
+    default:       return 'ws:';
+  }
+}
+
 function newConsole(element) {
   var jqconsole = element.jqconsole("", "> ");
   var writeText = function(text) {
@@ -24,7 +31,7 @@ function newConsole(element) {
     startPrompt();
   }
 
-  var url = 'ws://echo.websocket.org/';
+  var url = protocol() + '//echo.websocket.org/';
   var connect = function () {
     var ws = new WebSocket(url);
     ws.onmessage = function(event) {
