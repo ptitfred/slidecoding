@@ -55,9 +55,13 @@ copyElement from to f    = do
   else copyFile original copy
 
 bundle :: Design -> Asset
-bundle d = favicon d
+bundle d = mainStylesheet
+        <> favicon d
         <> highlightJS
         <> deckjs d
+
+mainStylesheet :: Asset
+mainStylesheet = CSS "slidecoding.css"
 
 favicon :: Design -> Asset
 favicon = maybe defaultFavicon Favicon . icon
@@ -99,11 +103,16 @@ deckjsTheme (Patch t l) = deckjsTheme t <> CSS l
 deckjsTheme (Custom l)  = CSS l
 
 deckjsExtensions :: Asset
-deckjsExtensions = deckjsFitExtension
+deckjsExtensions = deckjsFitExtension <> deckjsReplExtension
 
 deckjsFitExtension :: Asset
 deckjsFitExtension = CSS "deckjs/extensions/fit/deck.fit-fs.css"
                   <> JS  "deckjs/extensions/fit/deck.fit.js"
+
+deckjsReplExtension :: Asset
+deckjsReplExtension = CSS "deckjs/extensions/repl/deck.repl.css"
+                   <> JS  "deckjs/extensions/repl/deck.repl.js"
+                   <> JS  "jqconsole.min.js"
 
 data NavigationStyle = None | HorizontalSlide | VerticalSlide | Fade
 
@@ -122,6 +131,7 @@ template d titleText slides = do
       meta ! httpEquiv "X-UA-Compatible" ! content "IE=edge,chrome=1"
       title' titleText
       include (favicon d)
+      include mainStylesheet
       include highlightJS
       include (deckjs d)
     body ! class_ "deck-container" $ do

@@ -14,6 +14,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 data-dir:            web
 data-files:          highlight-pack-haskell.js
+                   , slidecoding.css
+                   , jqconsole.min.js
                    , lambda.png
                    , paraiso-dark-min.css
                    , deckjs/jquery.min.js
@@ -23,6 +25,8 @@ data-files:          highlight-pack-haskell.js
                    , deckjs/core/print.css
                    , deckjs/extensions/fit/deck.fit-fs.css
                    , deckjs/extensions/fit/deck.fit.js
+                   , deckjs/extensions/repl/deck.repl.css
+                   , deckjs/extensions/repl/deck.repl.js
                    , deckjs/themes/style/*.css
                    , deckjs/themes/transition/*.css
 
