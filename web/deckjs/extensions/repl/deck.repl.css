@@ -51,6 +51,10 @@ pre.jqconsole {
     color: white;
 }
 
+.jqconsole-error {
+    color: red;
+}
+
 .slide-columns {
     display: flex;
     height: 100%;
