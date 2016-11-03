@@ -2,13 +2,14 @@ function content($slide) {
   return $slide.children().first().nextAll();
 }
 
-function addReplToSlide($, $slide) {
+function addReplToSlide($, deck, $slide) {
+  var endpoint = $[deck]('getOptions').repl.endpoint;
   content($slide).wrapAll('<div class="slide-column"></div>');
   var replHtmlId = "console-" + $slide[0].id;
   $('<div/>', { id: replHtmlId, class: 'slide-column console' })
     .appendTo($slide);
   $('<script></script>')
-    .append("$(function () { newConsole($('#" + replHtmlId + "')); });")
+    .append("$(function () { newConsole('" + endpoint + "', $('#" + replHtmlId + "')); });")
     .appendTo($slide);
   content($slide).wrapAll('<div class="slide-columns"></div>');
 }
@@ -20,7 +21,7 @@ function protocol() {
   }
 }
 
-function newConsole(element) {
+function newConsole(endpoint, element) {
   var jqconsole = element.jqconsole("", "> ");
   var writeText = function(text) {
     jqconsole.Write(text, 'jqconsole-output');
@@ -31,8 +32,9 @@ function newConsole(element) {
     startPrompt();
   }
 
-  var url = protocol() + '//echo.websocket.org/';
+  var url = protocol() + endpoint;
   var connect = function () {
+    console.log('Connecting to ' + url);
     var ws = new WebSocket(url);
     ws.onmessage = function(event) {
       writeText(event.data);
@@ -79,6 +81,9 @@ function toggleOrder(i, order) {
 
     options.keys.repl
     Key to toggle REPL position between left and right (right by default).
+
+    options.repl.endpoint
+    URL of the websocket endpoint to use for REPL without the protocol part.
   */
   $.extend(true, $[deck].defaults, {
     classes: {
@@ -86,13 +91,16 @@ function toggleOrder(i, order) {
     },
     keys: {
       repl: 84 // t
+    },
+    repl: {
+      endpoint: '//echo.websocket.org/'
     }
   });
 
   $d.bind('deck.beforeInit', function() {
     $.each($[deck]('getSlides'), function(i, $slide) {
       if ($slide.hasClass('repl')) {
-        addReplToSlide($, $slide);
+        addReplToSlide($, deck, $slide);
       }
     });
   });
