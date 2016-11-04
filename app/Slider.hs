@@ -10,18 +10,15 @@ import System.Environment (getArgs)
 import System.FilePath    ((</>))
 
 data Config = Config FilePath Action
-data Action = Check | ProcessSlides | Index | Serve
+type Action = FilePath -> IO ()
 
 main :: IO ()
 main = withConfig run
 
 run :: Config -> IO ()
-run (Config f Check)         = check f
-run (Config f ProcessSlides) = process f
-run (Config f Index)         = index f
-run (Config f Serve)         = serve f
+run (Config file action) = action file
 
-check :: FilePath -> IO ()
+check :: Action
 check f = do
   checkPresentation f
   withProject f $ \(_, slides, descs) -> do
@@ -35,18 +32,18 @@ check f = do
 newline :: IO ()
 newline = putStrLn ""
 
-process :: FilePath -> IO ()
+process :: Action
 process dir = withProject dir $ \(presentation, slides, descs) -> do
   createDirectoryIfMissing True (distDir presentation)
   processSlides presentation descs slides
 
-index :: FilePath -> IO ()
+index :: Action
 index path = loadExposedModules path >>= maybe noModule someModules
   where noModule = putStrLn "No modules found"
         someModules = mapM_ indexModule
         indexModule m = indexIO m (path </> "tmp")
 
-serve :: FilePath -> IO ()
+serve :: Action
 serve f = withProject f $ \_ -> putStrLn ("Serving " ++ f)
 
 type Project = (Presentation, [FilePath], [Description])
@@ -138,8 +135,8 @@ parseArgs (a  : p  : _) = Config p <$> parseAction a
 parseArgs _             = Nothing
 
 parseAction :: String -> Maybe Action
-parseAction "check"   = Just Check
-parseAction "process" = Just ProcessSlides
-parseAction "index"   = Just Index
-parseAction "serve"   = Just Serve
+parseAction "check"   = Just check
+parseAction "process" = Just process
+parseAction "index"   = Just index
+parseAction "serve"   = Just serve
 parseAction _         = Nothing
