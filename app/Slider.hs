@@ -1,13 +1,16 @@
 module Main (main) where
 
-import Slidecoding        (browse, indexIO, loadExposedModules, load, processSlides)
+import Slidecoding        (browse, indexIO, loadExposedModules, load, processSlides, start)
 import Slidecoding.Types
 
-import Control.Monad      ((>=>))
+import Control.Concurrent (forkIO)
+import Control.Monad      ((>=>), void)
 import Data.List          (isSuffixOf)
 import System.Directory   (createDirectoryIfMissing, getDirectoryContents, doesDirectoryExist)
 import System.Environment (getArgs)
 import System.FilePath    ((</>))
+import qualified Network.Wai.Handler.Warp as Warp (run)
+import qualified Network.Wai.Application.Static as Wai (staticApp, defaultFileServerSettings)
 
 data Config = Config FilePath Action
 type Action = FilePath -> IO ()
@@ -47,7 +50,23 @@ index path = loadExposedModules path >>= maybe noModule someModules
         indexModule m = indexIO m (path </> "tmp")
 
 serve :: Action
-serve f = withProject f $ \_ -> putStrLn ("Serving " ++ f)
+serve f = withProject f $ \ project@(presentation, _, descs) -> do
+  let httpPort = 3000
+  let wsPort = httpPort + 1
+  process' (Just wsPort) project
+  putStrLn ("Serving " ++ f ++ " on http://localhost:" ++ show httpPort ++ "/")
+  serveWS wsPort f descs
+  serveStatic httpPort (distDir presentation)
+
+serveWS :: Port -> FilePath -> [Description] -> IO ()
+serveWS _ _ [] = return ()
+serveWS port f (Description (Module _ m) _ : _) = forkIO_ (start port context)
+  where forkIO_ = void . forkIO
+        context = singleModuleContext f m -- TODO multi modules context
+
+serveStatic :: Port -> FilePath -> IO ()
+serveStatic port directory = Warp.run port waiApp
+  where waiApp = Wai.staticApp (Wai.defaultFileServerSettings directory)
 
 type Project = (Presentation, [FilePath], [Description])
 

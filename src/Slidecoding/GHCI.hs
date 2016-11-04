@@ -35,7 +35,7 @@ writeOutput (Stream _ _ output) = output
 run :: (Monad m, MonadIO m) => Stream m -> Context -> m ()
 run stream ctx = do
   prepare stream
-  session <- liftIO (startSession ".")
+  session <- liftIO (startSession (workingDir ctx))
   loadCtx ctx session >>= either printError nothing
   forever $ evalInput session
   where evalInput s = readInput stream >>= liftIO . flip evalInSession s >>= printResult
