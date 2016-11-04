@@ -4,6 +4,8 @@ module Slidecoding.GHCI
     , ioStream
     ) where
 
+import Prelude hiding (fail, interact)
+
 import Slidecoding.ReplSession
 import Slidecoding.Types
 
@@ -36,17 +38,50 @@ run :: (Monad m, MonadIO m) => Stream m -> Context -> m ()
 run stream ctx = do
   prepare stream
   session <- liftIO (startSession (workingDir ctx))
-  loadCtx ctx session >>= either printError nothing
-  forever $ evalInput session
-  where evalInput s = readInput stream >>= liftIO . flip evalInSession s >>= printResult
-        printResult = either (writeOutput stream) (writeOutput stream)
-        printError e = liftIO $ putStr "Error: " >> print e
+  loadCtx "" ctx session >>= printResult stream
+  forever $ evalInput stream ctx session
 
-nothing :: Monad m => a -> m ()
-nothing _ = return ()
+evalInput :: (Monad m, MonadIO m) => Stream m -> Context -> ReplSession -> m ()
+evalInput stream ctx session = getCommand >>= interact >>= writeResult
+  where getCommand = readInput stream
+        interact = handle ctx session
+        writeResult = printResult stream
 
-loadCtx :: (Monad m, MonadIO m) => Context -> ReplSession -> m (Either String String)
-loadCtx ctx session = importModules session (modules ctx)
+printResult :: (Monad m, MonadIO m) => Stream m -> Either String String -> m ()
+printResult stream = either (writeOutput stream) (writeOutput stream)
+
+handle :: (Monad m, MonadIO m) => Context -> ReplSession -> String -> m (Either String String)
+handle c s msg
+  | isCommand msg = handleCommand (words msg) c s
+  | otherwise     = liftIO (evalInSession msg s)
+
+isCommand :: String -> Bool
+isCommand ('/' : a : _) = a /= ' '
+isCommand _ = False
+
+{-
+ Commands:
+   /load contextName
+   /help, /?
+ -}
+handleCommand :: (Monad m, MonadIO m) => [String] -> Context -> ReplSession -> m (Either String String)
+handleCommand ("/help": _) _ _ = help
+handleCommand ("/?": _)    _ _ = help
+handleCommand ("/load": ctxName : _) c s = loadCtx ctxName c s -- TODO use ctxName
+handleCommand (cmd:_) _ _ = fail ("Unknown command " ++ cmd)
+handleCommand []      _ _ = fail "No command"
+
+help :: Monad m => m (Either String String)
+help = say $ unlines [ "/load contextName : load modules from the context name"
+                     , "/help, /? : this message"
+                     ]
+
+say, fail :: Monad m => String -> m (Either String String)
+say = return . Right
+fail = return . Left
+
+loadCtx :: (Monad m, MonadIO m) => String -> Context -> ReplSession -> m (Either String String)
+loadCtx _ ctx session = importModules session (modules ctx)
 
 {-
   Boot sequence:
