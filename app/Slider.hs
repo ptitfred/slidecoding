@@ -33,9 +33,12 @@ newline :: IO ()
 newline = putStrLn ""
 
 process :: Action
-process dir = withProject dir $ \(presentation, slides, descs) -> do
+process dir = withProject dir (process' Nothing)
+
+process' :: Maybe Port -> Project -> IO ()
+process' port (presentation, slides, descs) = do
   createDirectoryIfMissing True (distDir presentation)
-  processSlides presentation descs slides
+  processSlides port presentation descs slides
 
 index :: Action
 index path = loadExposedModules path >>= maybe noModule someModules

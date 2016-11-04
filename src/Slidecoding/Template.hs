@@ -14,7 +14,7 @@ module Slidecoding.Template
     ) where
 
 import Slidecoding.Assets
-import Slidecoding.Types                  (Presentation, rootDir, distDir, metadata, design, Design(..), icon, Theme(..))
+import Slidecoding.Types                  (Presentation, rootDir, distDir, metadata, design, Design(..), icon, Theme(..), Port)
 
 import Prelude                     hiding (id, head, div)
 
@@ -122,8 +122,8 @@ deckjsTransition HorizontalSlide = CSS "deckjs/themes/transition/horizontal-slid
 deckjsTransition VerticalSlide   = CSS "deckjs/themes/transition/vertical-slide.css"
 deckjsTransition Fade            = CSS "deckjs/themes/transition/fade.css"
 
-template :: Design -> String -> Html -> Html
-template d titleText slides = do
+template :: Maybe Port -> Design -> String -> Html -> Html
+template port d titleText slides = do
   docType
   html $ do
     head $ do
@@ -136,7 +136,7 @@ template d titleText slides = do
       include (deckjs d)
     body ! class_ "deck-container" $ do
       slides
-      include $ bootDeckJS d
+      include $ bootDeckJS port d
 
 mkSection :: String   -- id of the section element
           -> [String] -- classes of the section element
@@ -147,14 +147,20 @@ mkSection id' cs = section ! id (fromString id') ! class_ (fromString (unwords $
 asComment :: String -> Html
 asComment = stringComment
 
-newtype Configuration = Configuration Design
+data Configuration = Configuration (Maybe Port) Design
 
 instance ToJSON Configuration where
-  toJSON (Configuration d) = object [ "designWidth" .= width d, "designHeight" .= height d ]
+  toJSON (Configuration  Nothing d) = object [ "designWidth" .= width d, "designHeight" .= height d ]
+  toJSON (Configuration (Just port) d) =
+    object [ "repl" .= object [ "endpoint" .= url ]
+           , "designWidth"   .= width d
+           , "designHeight"  .= height d
+           ]
+      where url = "//127.0.0.1:" ++ show port ++ "/"
 
-bootDeckJS :: Design -> Asset
-bootDeckJS d = InlineJS $ "$(function() { $.deck('.slide', " ++ encode' d ++ " ); });"
-  where encode' = unpack . encode . Configuration
+bootDeckJS :: Maybe Port -> Design -> Asset
+bootDeckJS port d = InlineJS $ "$(function() { $.deck('.slide', " ++ encode' (Configuration port d) ++ " ); });"
+  where encode' = unpack . encode
 
 wrapSection :: Html -> Html
 wrapSection = mkSection "" []

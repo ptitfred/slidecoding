@@ -17,10 +17,10 @@ import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inlin
                                         , nullMeta, readMarkdown, writePlain, writeHtml)
 import Text.Pandoc.Definition            (MetaValue(..))
 
-processSlides :: Presentation -> [Description] -> [FilePath] -> IO ()
-processSlides presentation descs chapters = do
+processSlides :: Maybe Port -> Presentation -> [Description] -> [FilePath] -> IO ()
+processSlides port presentation descs chapters = do
   distributeAssets presentation
-  document <- joinSections presentation <$> mapM (eachChapter descs) chapters
+  document <- joinSections port presentation <$> mapM (eachChapter descs) chapters
   writeFile outputFile document
     where outputFile = distDir presentation </> "index.html"
 
@@ -28,8 +28,8 @@ eachChapter :: [Description] -> FilePath -> IO (FilePath, Pandoc)
 eachChapter descs file = pipeline <$> readFile file
   where pipeline = (,) file . walkSlides descs . readChapter file
 
-joinSections :: Presentation -> [(FilePath, Pandoc)] -> String
-joinSections presentation slides = renderHtml (template design' title' document)
+joinSections :: Maybe Port -> Presentation -> [(FilePath, Pandoc)] -> String
+joinSections port presentation slides = renderHtml (template port design' title' document)
   where document   = titleSlide <> content
         content    = mconcatWith writeSection slides
         meta'      = metadata presentation
