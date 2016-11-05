@@ -51,7 +51,7 @@ index path = loadExposedModules path >>= maybe noModule someModules
 
 serve :: Action
 serve f = withProject f $ \ project@(presentation, _, descs) -> do
-  let httpPort = 3000
+  let httpPort = 1337
   let wsPort = httpPort + 1
   process' (Just wsPort) project
   putStrLn ("Serving " ++ f ++ " on http://localhost:" ++ show httpPort ++ "/")
