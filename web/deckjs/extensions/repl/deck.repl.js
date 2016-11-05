@@ -4,9 +4,9 @@ function content($slide) {
 
 function addReplToSlide($, deck, $slide) {
   var endpoint = $[deck]('getOptions').repl.endpoint;
-  content($slide).wrapAll('<div class="slide-column"></div>');
+  content($slide).wrapAll('<div class="slide-column text-column"></div>');
   var replHtmlId = "console-" + $slide[0].id;
-  $('<div/>', { id: replHtmlId, class: 'slide-column console' })
+  $('<div/>', { id: replHtmlId, class: 'slide-column console-column' })
     .appendTo($slide);
   $('<script></script>')
     .append("$(function () { newConsole('" + endpoint + "', $('#" + replHtmlId + "')); });")
@@ -75,14 +75,23 @@ function toggleOrder(i, order) {
   }
 }
 
+function isKey(e, keyValue) {
+  return e.which === keyValue || $.inArray(e.which, keyValue) > -1;
+}
+
 (function($, deck, window, undefined) {
   var $d = $(document);
 
   /*
     Extends defaults/options.
 
-    options.keys.repl
+    options.keys.replPositionToggle
     Key to toggle REPL position between left and right (right by default).
+    Default key is 'T'.
+
+    options.keys.replFullscreenToggle
+    Key to toggle REPL to fullscreen, hiding the other column and slide title.
+    Default key is 'F'.
 
     options.repl.endpoint
     URL of the websocket endpoint to use for REPL without the protocol part.
@@ -92,7 +101,8 @@ function toggleOrder(i, order) {
       repl: 'deck-repl'
     },
     keys: {
-      repl: 84 // t
+      replPositionToggle:   84, // t
+      replFullscreenToggle: 70  // f
     },
     repl: {
       endpoint: '//echo.websocket.org/'
@@ -113,15 +123,25 @@ function toggleOrder(i, order) {
     Toggles REPL position (right column first).
   */
   $[deck]('extend', 'toggleReplPosition', function() {
-    $('.console').css('order', toggleOrder);
+    $('.console-column').css('order', toggleOrder);
+  });
+
+  $[deck]('extend', 'toggleReplFullscreen', function() {
+    $('.deck-current .slide-columns').siblings().toggle();
+    $('.deck-current .text-column').toggle();
+    $('.deck-current .console-column').toggleClass('console-column-fullscreen');
   });
 
   $d.bind('deck.init', function() {
     var opts = $[deck]('getOptions');
     // Bind key events
     $d.unbind('keydown.deckrepl').bind('keydown.deckrepl', function(e) {
-      if (e.which === opts.keys.repl || $.inArray(e.which, opts.keys.repl) > -1) {
+      if (isKey(e, opts.keys.replPositionToggle)) {
         $[deck]('toggleReplPosition');
+        e.preventDefault();
+      }
+      if (isKey(e, opts.keys.replFullscreenToggle)) {
+        $[deck]('toggleReplFullscreen');
         e.preventDefault();
       }
     });
