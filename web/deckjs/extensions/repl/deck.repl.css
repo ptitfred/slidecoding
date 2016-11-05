@@ -74,4 +74,5 @@ pre.jqconsole {
 
 .console-column-fullscreen > div {
     height: 80%;
+    margin-top: 5%;
 }
