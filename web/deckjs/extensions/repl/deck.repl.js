@@ -21,6 +21,10 @@ function protocol() {
   }
 }
 
+function url(endpoint) {
+  return protocol() + endpoint;
+}
+
 function newConsole(endpoint, element) {
   var jqconsole = element.jqconsole("", "> ");
   var writeText = function(text) {
@@ -32,10 +36,8 @@ function newConsole(endpoint, element) {
     startPrompt();
   }
 
-  var url = protocol() + endpoint;
   var connect = function () {
-    console.log('Connecting to ' + url);
-    var ws = new WebSocket(url);
+    var ws = new WebSocket(url(endpoint));
     ws.onmessage = function(event) {
       writeText(event.data);
     };
