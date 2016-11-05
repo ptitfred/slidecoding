@@ -4,14 +4,14 @@ function content($slide) {
 
 function addReplToSlide($, deck, $slide) {
   var endpoint = $[deck]('getOptions').repl.endpoint;
-  content($slide).wrapAll('<div class="slide-column text-column"></div>');
+  content($slide).wrapAll('<div class="repl-slide-column repl-text-column"></div>');
   var replHtmlId = "console-" + $slide[0].id;
-  $('<div/>', { id: replHtmlId, class: 'slide-column console-column' })
+  $('<div/>', { id: replHtmlId, class: 'repl-slide-column repl-console-column' })
     .appendTo($slide);
   $('<script></script>')
     .append("$(function () { newConsole('" + endpoint + "', $('#" + replHtmlId + "')); });")
     .appendTo($slide);
-  content($slide).wrapAll('<div class="slide-columns"></div>');
+  content($slide).wrapAll('<div class="repl-slide-columns"></div>');
 }
 
 function protocol() {
@@ -133,9 +133,9 @@ function isKey(e, keyValue) {
   });
 
   $[deck]('extend', 'toggleReplFullscreen', function() {
-    $('.deck-current .slide-columns').siblings().toggle();
-    $('.deck-current .text-column').toggle();
-    $('.deck-current .console-column').toggleClass('console-column-fullscreen');
+    $('.deck-current .repl-slide-columns').siblings().toggle();
+    $('.deck-current .repl-text-column').toggle();
+    $('.deck-current .repl-console-column').toggleClass('repl-console-column-fullscreen');
   });
 
   $d.bind('deck.init', function() {

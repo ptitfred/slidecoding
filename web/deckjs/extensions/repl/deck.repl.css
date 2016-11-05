@@ -55,24 +55,24 @@ pre.jqconsole {
     color: red;
 }
 
-.slide-columns {
+.repl-slide-columns {
     display: flex;
     height: 100%;
 }
 
-.slide-column {
+.repl-slide-column {
     order: 1;
     margin: 10px;
     width: 100%;
     height: 100%;
 }
 
-.console-column > div {
+.repl-console-column > div {
     position: initial !important;
     height: 60%;
 }
 
-.console-column-fullscreen > div {
+.repl-console-column-fullscreen > div {
     height: 80%;
     margin-top: 5%;
 }
@@ -84,6 +84,6 @@ div.repl-fullscreen-hint {
   display: none;
 }
 
-.console-column-fullscreen .repl-fullscreen-hint {
+.repl-console-column-fullscreen .repl-fullscreen-hint {
   display: block;
 }
