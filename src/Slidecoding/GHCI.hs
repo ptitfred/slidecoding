@@ -9,7 +9,7 @@ import Prelude hiding (fail, interact)
 import Slidecoding.ReplSession
 import Slidecoding.Types
 
-import Control.Monad          (forever, when, void)
+import Control.Monad          (forever, void, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import System.IO              (BufferMode(..), hSetBuffering, stdout, stderr)
 
@@ -38,7 +38,6 @@ run :: (Monad m, MonadIO m) => Stream m -> Context -> m ()
 run stream ctx = do
   prepare stream
   session <- liftIO (startSession (workingDir ctx))
-  loadCtx "" ctx session >>= printResult stream
   forever $ evalInput stream ctx session
 
 evalInput :: (Monad m, MonadIO m) => Stream m -> Context -> ReplSession -> m ()
@@ -53,7 +52,7 @@ printResult stream = either (writeOutput stream) (writeOutput stream)
 handle :: (Monad m, MonadIO m) => Context -> ReplSession -> String -> m (Either String String)
 handle c s msg
   | isCommand msg = handleCommand (words msg) c s
-  | otherwise     = liftIO (evalInSession msg s)
+  | otherwise     = liftIO (evalInSession s msg)
 
 isCommand :: String -> Bool
 isCommand ('/' : a : _) = a /= ' '
@@ -67,7 +66,9 @@ isCommand _ = False
 handleCommand :: (Monad m, MonadIO m) => [String] -> Context -> ReplSession -> m (Either String String)
 handleCommand ("/help": _) _ _ = help
 handleCommand ("/?": _)    _ _ = help
-handleCommand ("/load": ctxName : _) c s = loadCtx ctxName c s -- TODO use ctxName
+handleCommand ("/load": ctxName : _) c s = do
+  sayIO ("/load " ++ ctxName)
+  loadCtx ctxName c s
 handleCommand (cmd:_) _ _ = fail ("Unknown command " ++ cmd)
 handleCommand []      _ _ = fail "No command"
 
@@ -76,12 +77,15 @@ help = say $ unlines [ "/load contextName : load modules from the context name"
                      , "/help, /? : this message"
                      ]
 
+sayIO :: MonadIO m => String -> m ()
+sayIO = liftIO.putStrLn
+
 say, fail :: Monad m => String -> m (Either String String)
 say = return . Right
 fail = return . Left
 
-loadCtx :: (Monad m, MonadIO m) => String -> Context -> ReplSession -> m (Either String String)
-loadCtx _ ctx session = importModules session (modules ctx)
+loadCtx :: (Monad m, MonadIO m) => ModuleName -> Context -> ReplSession -> m (Either String String)
+loadCtx moduleName ctx session = importModules session moduleName ctx
 
 {-
   Boot sequence:
@@ -97,16 +101,24 @@ loadCtx _ ctx session = importModules session (modules ctx)
   > import dependentModule2
 
  -}
-importModules :: (Monad m, MonadIO m) => ReplSession -> [ModuleName] -> m (Either String String)
-importModules s ms = liftIO $ do
-  -- TODO: see how to chain IO (Either a b)
-  void $ evalInSession ":load" s
-  void $ evalInSession (":load " ++ unwords ms) s
-  reduce <$> mapM importModule ms
-  where importModule m = evalInSession (cmd m) s
-        cmd m = "import " ++ m
+importModules :: (Monad m, MonadIO m) => ReplSession -> ModuleName -> Context -> m (Either String String)
+importModules s mn ctx = liftIO $ do
+  evalSilent  ":load" -- Resets the context
+  evalSilent (":load " ++ unwords ms)
+  evalAllWith importModule ms
+  where ms = mn : tms
+        tms = topLevelModules ctx
+        importModule m = "import " ++ m
+        eval = evalInSession s
+        evalSilent = void . eval
+        evalAllWith f = reduceMWith (eval.f)
 
-reduce :: [Either String String] -> Either String String
-reduce = foldr failFast (Right "")
-  where failFast (Left e)  _ = Left e
-        failFast (Right _) r = r
+reduceMWith :: (Monad m) => (a -> m (Either e String)) -> [a] -> m (Either e String)
+reduceMWith f = reduceM . map f
+
+reduceM :: (Monad m) => [m (Either e String)] -> m (Either e String)
+reduceM actions = reduceM' actions (Right "")
+
+reduceM' :: (Monad m) => [m (Either e v)] -> Either e v -> m (Either e v)
+reduceM' (a:as) (Right _) = a >>= reduceM' as
+reduceM' _      r         = return r

@@ -25,7 +25,17 @@ function url(endpoint) {
   return protocol() + endpoint;
 }
 
+function getContext(element) {
+  return element.attr('data-repl-context') || element.parents('[data-repl-context]').attr('data-repl-context');
+}
+
+function hasContext(element) {
+  var ctx = getContext(element);
+  return ctx !== undefined && ctx !== "";
+}
+
 function newConsole(endpoint, element) {
+  var replContext = getContext(element);
   var jqconsole = element.jqconsole("", "> ");
   var writeText = function(text) {
     jqconsole.Write(text, 'jqconsole-output');
@@ -39,13 +49,14 @@ function newConsole(endpoint, element) {
   var connect = function () {
     var ws = new WebSocket(url(endpoint));
     ws.onmessage = function(event) {
+      jqconsole.Enable();
       writeText(event.data);
     };
     ws.onerror = function(event) {
       writeError("Connection error\n");
     };
     ws.onopen = function(event) {
-      writeText("Ready\n");
+      ws.send("/load " + replContext);
     };
     return ws;
   }
@@ -64,6 +75,7 @@ function newConsole(endpoint, element) {
       }
     });
   };
+  jqconsole.Disable();
 
   addFullscreenHint(element);
 
@@ -117,7 +129,7 @@ function isKey(e, keyValue) {
 
   $d.bind('deck.beforeInit', function() {
     $.each($[deck]('getSlides'), function(i, $slide) {
-      if ($slide.hasClass('repl')) {
+      if ($slide.hasClass('repl') && hasContext($slide)) {
         addReplToSlide($, deck, $slide);
       }
     });

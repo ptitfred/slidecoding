@@ -64,16 +64,17 @@ offsetHeaders off (Header n attrs blocks) = Header (n + off) attrs blocks
 offsetHeaders _ b = b
 
 writeSection :: (FilePath, Pandoc) -> Html
-writeSection (file, Pandoc _ blocks) = asComment file <> mconcatWith writeSection' sections
+writeSection (file, Pandoc m blocks) = asComment file <> mconcatWith (writeSection' replContext) sections
   where sections = groupBySection blocks
+        replContext = readContext m
 
-writeSection' :: Section -> Html
-writeSection' (Section (Header n (id', classes, properties) titleContent : blocks)) =
+writeSection' :: Maybe String -> Section -> Html
+writeSection' replContext (Section (Header n (id', classes, properties) titleContent : blocks)) =
   section $ writeHtml def section'
     where section' = Pandoc nullMeta (Header n ("", [], properties) titleContent : blocks)
-          section = mkSection id' classes
-writeSection' (Section content) =
-  wrapSection $ writeHtml def section'
+          section = mkSection id' classes replContext
+writeSection' replContext (Section content) =
+  wrapSection replContext $ writeHtml def section'
     where section' = Pandoc nullMeta content
 
 groupBySection :: [Block] -> [Section]
@@ -99,9 +100,14 @@ walkSlides descs (Chapter file doc) = Pandoc m content
 
 readTitle :: Meta -> Maybe String
 readTitle (Meta attrs) = lookup "title" attrs >>= expectString
-  where expectString (MetaInlines is) = Just (writePlain def (Pandoc nullMeta [Plain is]))
-        expectString (MetaString   s) = Just s
-        expectString  _               = Nothing
+
+readContext :: Meta -> Maybe String
+readContext (Meta attrs) = lookup "context" attrs >>= expectString
+
+expectString :: MetaValue -> Maybe String
+expectString (MetaInlines is) = Just (writePlain def (Pandoc nullMeta [Plain is]))
+expectString (MetaString   s) = Just s
+expectString  _               = Nothing
 
 chapterTitle :: String -> String -> Block
 chapterTitle key title' = Header 1 attributes [Str title']
