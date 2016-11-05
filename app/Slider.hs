@@ -51,18 +51,24 @@ index path = loadExposedModules path >>= maybe noModule someModules
 
 serve :: Action
 serve f = withProject f $ \ project@(presentation, _, descs) -> do
-  let httpPort = 3000
+  let httpPort = 1337
   let wsPort = httpPort + 1
   process' (Just wsPort) project
   putStrLn ("Serving " ++ f ++ " on http://localhost:" ++ show httpPort ++ "/")
-  serveWS wsPort f descs
+  serveWS wsPort (buildContext f descs)
   serveStatic httpPort (distDir presentation)
 
-serveWS :: Port -> FilePath -> [Description] -> IO ()
-serveWS _ _ [] = return ()
-serveWS port f (Description (Module _ m) _ : _) = forkIO_ (start port context)
-  where forkIO_ = void . forkIO
-        context = singleModuleContext f m -- TODO multi modules context
+serveWS :: Port -> Maybe Context -> IO ()
+serveWS _     Nothing       = return ()
+serveWS port (Just context) = forkIO_ (start port context)
+
+forkIO_ :: IO () -> IO ()
+forkIO_ = void . forkIO
+
+buildContext :: FilePath -> [Description] -> Maybe Context
+-- TODO multi modules context
+buildContext f (Description (Module _ m) _ : _) = Just (singleModuleContext f m)
+buildContext _ _                                = Nothing
 
 serveStatic :: Port -> FilePath -> IO ()
 serveStatic port directory = Warp.run port waiApp
