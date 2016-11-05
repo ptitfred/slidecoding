@@ -76,3 +76,14 @@ pre.jqconsole {
     height: 80%;
     margin-top: 5%;
 }
+
+div.repl-fullscreen-hint {
+  margin: 0.5em;
+  font-size: 66%;
+  opacity: 0.3;
+  display: none;
+}
+
+.console-column-fullscreen .repl-fullscreen-hint {
+  display: block;
+}

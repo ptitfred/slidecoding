@@ -65,8 +65,14 @@ function newConsole(endpoint, element) {
     });
   };
 
+  addFullscreenHint(element);
+
   startPrompt();
 };
+
+function addFullscreenHint(element) {
+  $('<div/>', { class: 'repl-fullscreen-hint', text: 'Fullscreen — Hit F to quit' }).appendTo(element);
+}
 
 function toggleOrder(i, order) {
   switch (order) {
