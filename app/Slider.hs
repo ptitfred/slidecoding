@@ -1,27 +1,27 @@
 module Main (main) where
 
-import Slidecoding        (browse, indexIO, loadExposedModules, load, processSlides)
+import Slidecoding        (browse, indexIO, loadExposedModules, load, processSlides, start)
 import Slidecoding.Types
 
-import Control.Monad      ((>=>))
+import Control.Concurrent (forkIO)
+import Control.Monad      ((>=>), void)
 import Data.List          (isSuffixOf)
 import System.Directory   (createDirectoryIfMissing, getDirectoryContents, doesDirectoryExist)
 import System.Environment (getArgs)
 import System.FilePath    ((</>))
+import qualified Network.Wai.Handler.Warp as Warp (run)
+import qualified Network.Wai.Application.Static as Wai (staticApp, defaultFileServerSettings)
 
 data Config = Config FilePath Action
-data Action = Check | ProcessSlides | Index | Serve
+type Action = FilePath -> IO ()
 
 main :: IO ()
 main = withConfig run
 
 run :: Config -> IO ()
-run (Config f Check)         = check f
-run (Config f ProcessSlides) = process f
-run (Config f Index)         = index f
-run (Config f Serve)         = serve f
+run (Config file action) = action file
 
-check :: FilePath -> IO ()
+check :: Action
 check f = do
   checkPresentation f
   withProject f $ \(_, slides, descs) -> do
@@ -35,19 +35,38 @@ check f = do
 newline :: IO ()
 newline = putStrLn ""
 
-process :: FilePath -> IO ()
-process dir = withProject dir $ \(presentation, slides, descs) -> do
-  createDirectoryIfMissing True (distDir presentation)
-  processSlides presentation descs slides
+process :: Action
+process dir = withProject dir (process' Nothing)
 
-index :: FilePath -> IO ()
+process' :: Maybe Port -> Project -> IO ()
+process' port (presentation, slides, descs) = do
+  createDirectoryIfMissing True (distDir presentation)
+  processSlides port presentation descs slides
+
+index :: Action
 index path = loadExposedModules path >>= maybe noModule someModules
   where noModule = putStrLn "No modules found"
         someModules = mapM_ indexModule
         indexModule m = indexIO m (path </> "tmp")
 
-serve :: FilePath -> IO ()
-serve f = withProject f $ \_ -> putStrLn ("Serving " ++ f)
+serve :: Action
+serve f = withProject f $ \ project@(presentation, _, descs) -> do
+  let httpPort = 3000
+  let wsPort = httpPort + 1
+  process' (Just wsPort) project
+  putStrLn ("Serving " ++ f ++ " on http://localhost:" ++ show httpPort ++ "/")
+  serveWS wsPort f descs
+  serveStatic httpPort (distDir presentation)
+
+serveWS :: Port -> FilePath -> [Description] -> IO ()
+serveWS _ _ [] = return ()
+serveWS port f (Description (Module _ m) _ : _) = forkIO_ (start port context)
+  where forkIO_ = void . forkIO
+        context = singleModuleContext f m -- TODO multi modules context
+
+serveStatic :: Port -> FilePath -> IO ()
+serveStatic port directory = Warp.run port waiApp
+  where waiApp = Wai.staticApp (Wai.defaultFileServerSettings directory)
 
 type Project = (Presentation, [FilePath], [Description])
 
@@ -138,8 +157,8 @@ parseArgs (a  : p  : _) = Config p <$> parseAction a
 parseArgs _             = Nothing
 
 parseAction :: String -> Maybe Action
-parseAction "check"   = Just Check
-parseAction "process" = Just ProcessSlides
-parseAction "index"   = Just Index
-parseAction "serve"   = Just Serve
+parseAction "check"   = Just check
+parseAction "process" = Just process
+parseAction "index"   = Just index
+parseAction "serve"   = Just serve
 parseAction _         = Nothing

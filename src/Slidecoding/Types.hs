@@ -39,8 +39,8 @@ data Description = Description Module [Item]
 data Item = Item Symbol Signature Source
 newtype Source = Source String
 
-singleModuleContext :: ModuleName -> Context
-singleModuleContext moduleName = Context moduleName [path] [moduleName] []
+singleModuleContext :: FilePath -> ModuleName -> Context
+singleModuleContext dir moduleName = Context dir moduleName [path] [moduleName] []
   where path = "src" </> moduleName <.> "hs"
 
 data Stream m where
@@ -49,7 +49,8 @@ data Stream m where
                     -> (String -> m ()) -- writeOutput
                     -> Stream m
 
-data Context = Context { name            :: Name         -- A name for debugging
+data Context = Context { workingDir      :: FilePath
+                       , name            :: Name         -- A name for debugging
                        , sources         :: [FilePath]   -- Source files to load
                        , modules         :: [ModuleName] -- Modules to import
                        , topLevelModules :: [ModuleName] -- Modules to interpret (private elems will be available)
