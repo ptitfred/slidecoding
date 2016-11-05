@@ -67,7 +67,11 @@ pre.jqconsole {
     height: 100%;
 }
 
-.console > div {
+.console-column > div {
     position: initial !important;
     height: 60%;
+}
+
+.console-column-fullscreen > div {
+    height: 80%;
 }
