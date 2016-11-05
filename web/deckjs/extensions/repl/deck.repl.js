@@ -129,7 +129,7 @@ function isKey(e, keyValue) {
     Toggles REPL position (right column first).
   */
   $[deck]('extend', 'toggleReplPosition', function() {
-    $('.console-column').css('order', toggleOrder);
+    $('.repl-console-column').css('order', toggleOrder);
   });
 
   $[deck]('extend', 'toggleReplFullscreen', function() {
