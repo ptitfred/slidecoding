@@ -83,7 +83,19 @@ function newConsole(endpoint, element) {
       });
     };
 
-    startPrompt();
+    var setup = function() {
+      jqconsole.RegisterShortcut('L', reset);
+      startPrompt();
+    };
+
+    var reset = function() {
+      var history = jqconsole.GetHistory();
+      jqconsole.Reset();
+      jqconsole.SetHistory(history);
+      setup();
+    };
+
+    setup();
   } else {
     startPrompt = function() {};
 
