@@ -7,3 +7,9 @@ design:
   theme:
     base: neon
     custom: "assets/custom.css"
+contexts:
+  chapter1:
+    module: Example1
+  chapter2:
+    module: Example2
+    others: [ Utils ]

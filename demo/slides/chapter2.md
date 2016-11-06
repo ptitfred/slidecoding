@@ -1,6 +1,6 @@
 ---
 title: 'Chapter 2'
-context: 'Example2'
+context: 'chapter2'
 ...
 
 # Try it {.repl}

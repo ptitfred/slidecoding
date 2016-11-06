@@ -11,6 +11,7 @@ import Slidecoding.Types
 
 import Control.Monad          (forever, void, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.List              (find)
 import System.IO              (BufferMode(..), hSetBuffering, stdout, stderr)
 
 ioStream :: Bool -> Stream IO
@@ -34,24 +35,25 @@ readInput (Stream _ input _) = input
 writeOutput :: Monad m => Stream m -> String -> m ()
 writeOutput (Stream _ _ output) = output
 
-run :: (Monad m, MonadIO m) => Stream m -> Context -> m ()
-run stream ctx = do
+run :: (Monad m, MonadIO m) => Stream m -> Presentation -> m ()
+run stream presentation = do
   prepare stream
-  session <- liftIO (startSession (workingDir ctx))
+  session <- liftIO (startSession (rootDir presentation))
   forever $ evalInput stream ctx session
+    where ctx = contexts (metadata presentation)
 
-evalInput :: (Monad m, MonadIO m) => Stream m -> Context -> ReplSession -> m ()
-evalInput stream ctx session = getCommand >>= interact >>= writeResult
+evalInput :: (Monad m, MonadIO m) => Stream m -> [Context] -> ReplSession -> m ()
+evalInput stream ctxs session = getCommand >>= interact >>= writeResult
   where getCommand = readInput stream
-        interact = handle ctx session
+        interact = handle ctxs session
         writeResult = printResult stream
 
 printResult :: (Monad m, MonadIO m) => Stream m -> Either String String -> m ()
 printResult stream = either (writeOutput stream) (writeOutput stream)
 
-handle :: (Monad m, MonadIO m) => Context -> ReplSession -> String -> m (Either String String)
-handle c s msg
-  | isCommand msg = handleCommand (words msg) c s
+handle :: (Monad m, MonadIO m) => [Context] -> ReplSession -> String -> m (Either String String)
+handle cs s msg
+  | isCommand msg = handleCommand (words msg) cs s
   | otherwise     = liftIO (evalInSession s msg)
 
 isCommand :: String -> Bool
@@ -63,12 +65,15 @@ isCommand _ = False
    /load contextName
    /help, /?
  -}
-handleCommand :: (Monad m, MonadIO m) => [String] -> Context -> ReplSession -> m (Either String String)
+handleCommand :: (Monad m, MonadIO m) => [String] -> [Context] -> ReplSession -> m (Either String String)
 handleCommand ("/help": _) _ _ = help
 handleCommand ("/?": _)    _ _ = help
-handleCommand ("/load": ctxName : _) c s = do
+handleCommand ("/load": ctxName : _) cs s = do
   sayIO ("/load " ++ ctxName)
-  loadCtx ctxName c s
+  maybe (fail notFound) (loadContext s) ctx
+    where ctx = find (byName ctxName) cs
+          byName n c = name c == n
+          notFound = "Context " ++ ctxName ++ " undefined"
 handleCommand (cmd:_) _ _ = fail ("Unknown command " ++ cmd)
 handleCommand []      _ _ = fail "No command"
 
@@ -84,9 +89,6 @@ say, fail :: Monad m => String -> m (Either String String)
 say = return . Right
 fail = return . Left
 
-loadCtx :: (Monad m, MonadIO m) => ModuleName -> Context -> ReplSession -> m (Either String String)
-loadCtx moduleName ctx session = importModules session moduleName ctx
-
 {-
   Boot sequence:
 
@@ -101,13 +103,14 @@ loadCtx moduleName ctx session = importModules session moduleName ctx
   > import dependentModule2
 
  -}
-importModules :: (Monad m, MonadIO m) => ReplSession -> ModuleName -> Context -> m (Either String String)
-importModules s mn ctx = liftIO $ do
+loadContext :: (Monad m, MonadIO m) => ReplSession -> Context -> m (Either String String)
+loadContext s ctx = liftIO $ do
   evalSilent  ":load" -- Resets the context
-  evalSilent (":load " ++ unwords ms)
-  evalAllWith importModule ms
-  where ms = mn : tms
-        tms = topLevelModules ctx
+  evalSilent (":load " ++ unwords allModules)
+  evalAllWith importModule others
+  where allModules = main : others
+        main = mainModule ctx
+        others = otherModules ctx
         importModule m = "import " ++ m
         eval = evalInSession s
         evalSilent = void . eval

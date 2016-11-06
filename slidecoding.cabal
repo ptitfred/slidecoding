@@ -64,6 +64,7 @@ library
                      , pandoc-types
                      , blaze-html
                      , containers
+                     , unordered-containers
   default-language:    Haskell2010
 
 executable slider
