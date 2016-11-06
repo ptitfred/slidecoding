@@ -1,8 +1,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Slidecoding.Types
     ( Context(..)
+    , ContextName
     , Description(..)
     , Design(..)
     , Item(..)
@@ -19,13 +21,14 @@ module Slidecoding.Types
     , Symbol(..)
     , Theme(..)
     , ValidationMessage
-    , singleModuleContext
-    , simpleContext
     ) where
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Data.Foldable    (asum)
+import Data.Traversable (for)
+import qualified Data.Text as T
+import qualified Data.HashMap.Strict as HM
 
 type Port = Int
 type Name = String
@@ -39,21 +42,17 @@ data Description = Description Module [Item]
 data Item = Item Symbol Signature Source
 newtype Source = Source String
 
-simpleContext :: FilePath -> [ModuleName] -> Context
-simpleContext dir moduleNames = Context dir moduleNames []
-
-singleModuleContext :: FilePath -> ModuleName -> Context
-singleModuleContext dir moduleName = Context dir [moduleName] []
-
 data Stream m where
   Stream :: Monad m => m ()             -- prepare
                     -> m String         -- readInput
                     -> (String -> m ()) -- writeOutput
                     -> Stream m
 
-data Context = Context { workingDir      :: FilePath
-                       , modules         :: [ModuleName] -- Modules to import
-                       , topLevelModules :: [ModuleName] -- Modules to interpret (private elems will be available)
+type ContextName = String
+
+data Context = Context { name         ::  ContextName
+                       , mainModule   ::  ModuleName
+                       , otherModules :: [ModuleName]
                        }
 
 data Presentation = Presentation { rootDir  :: FilePath
@@ -61,8 +60,9 @@ data Presentation = Presentation { rootDir  :: FilePath
                                  , metadata :: Metadata
                                  }
 
-data Metadata = Metadata { title  :: String
-                         , design :: Design
+data Metadata = Metadata { title    ::  String
+                         , design   ::  Design
+                         , contexts :: [Context]
                          }
 
 data Design = Design { width  :: Pixel
@@ -75,8 +75,9 @@ type Pixel = Int
 data Theme = Builtin String | Custom FilePath | Patch Theme FilePath
 
 instance FromJSON Metadata where
-  parseJSON (Object v) = Metadata <$> v .: "title"
-                                  <*> v .: "design"
+  parseJSON (Object v) = Metadata <$> v .:  "title"
+                                  <*> v .:  "design"
+                                  <*> v .:? "contexts" .!= []
   parseJSON invalid    = typeMismatch "Metadata" invalid
 
 instance FromJSON Design where
@@ -85,6 +86,18 @@ instance FromJSON Design where
                                 <*> v .:? "theme"
                                 <*> v .:? "icon"
   parseJSON invalid    = typeMismatch "Design" invalid
+
+data PartialContext = PartialContext ModuleName [ModuleName]
+
+instance FromJSON PartialContext where
+  parseJSON (Object o) = PartialContext <$> o .:  "module"
+                                        <*> o .:? "others" .!= []
+  parseJSON invalid    = typeMismatch "PartialContext" invalid
+
+instance FromJSON [Context] where
+  parseJSON (Object v) = for (HM.toList v) $ \ (n, ctx) -> buildContext (T.unpack n) <$> parseJSON ctx
+    where buildContext n (PartialContext m mn) = Context n m mn
+  parseJSON invalid    = typeMismatch "Context" invalid
 
 instance FromJSON Theme where
   parseJSON (Object v) =
