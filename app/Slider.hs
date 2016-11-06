@@ -58,17 +58,18 @@ serve f = withProject f $ \ project@(presentation, _, descs) -> do
   serveWS wsPort (buildContext f descs)
   serveStatic httpPort (distDir presentation)
 
-serveWS :: Port -> Maybe Context -> IO ()
-serveWS _     Nothing       = return ()
-serveWS port (Just context) = forkIO_ (start port context)
+serveWS :: Port -> Context -> IO ()
+serveWS port context = forkIO_ (start port context)
 
 forkIO_ :: IO () -> IO ()
 forkIO_ = void . forkIO
 
-buildContext :: FilePath -> [Description] -> Maybe Context
--- TODO multi modules context
-buildContext f (Description (Module _ m) _ : _) = Just (singleModuleContext f m)
-buildContext _ _                                = Nothing
+buildContext :: FilePath -> [Description] -> Context
+buildContext f = simpleContext f . moduleNames
+
+moduleNames :: [Description] -> [ModuleName]
+moduleNames = map moduleName
+  where moduleName (Description (Module _ mn) _) = mn
 
 serveStatic :: Port -> FilePath -> IO ()
 serveStatic port directory = Warp.run port waiApp

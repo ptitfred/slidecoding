@@ -140,9 +140,17 @@ template port d titleText slides = do
 
 mkSection :: String   -- id of the section element
           -> [String] -- classes of the section element
+          -> Maybe String -- optional REPL context name to store on the section element
           -> Html -> Html
-mkSection ""  cs = section                       ! class_ (fromString (unwords $ "slide" : cs))
-mkSection id' cs = section ! id (fromString id') ! class_ (fromString (unwords $ "slide" : cs))
+mkSection ""  cs ctx = mkSectionWithContext cs ctx
+mkSection id' cs ctx = mkSectionWithContext cs ctx ! id (fromString id')
+
+mkSectionWithContext :: [String] -> Maybe String -> Html -> Html
+mkSectionWithContext cs  Nothing           = mkSimpleSection cs
+mkSectionWithContext cs (Just replContext) = mkSimpleSection cs ! dataAttribute "repl-context" (fromString replContext)
+
+mkSimpleSection :: [String] -> Html -> Html
+mkSimpleSection cs = section ! class_ (fromString (unwords $ "slide" : cs))
 
 asComment :: String -> Html
 asComment = stringComment
@@ -162,7 +170,7 @@ bootDeckJS :: Maybe Port -> Design -> Asset
 bootDeckJS port d = InlineJS $ "$(function() { $.deck('.slide', " ++ encode' (Configuration port d) ++ " ); });"
   where encode' = unpack . encode
 
-wrapSection :: Html -> Html
+wrapSection :: Maybe String -> Html -> Html
 wrapSection = mkSection "" []
 
 title' :: String -> Html

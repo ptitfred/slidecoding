@@ -20,12 +20,12 @@ module Slidecoding.Types
     , Theme(..)
     , ValidationMessage
     , singleModuleContext
+    , simpleContext
     ) where
 
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
 import Data.Foldable    (asum)
-import System.FilePath  ((</>), (<.>))
 
 type Port = Int
 type Name = String
@@ -39,9 +39,11 @@ data Description = Description Module [Item]
 data Item = Item Symbol Signature Source
 newtype Source = Source String
 
+simpleContext :: FilePath -> [ModuleName] -> Context
+simpleContext dir moduleNames = Context dir moduleNames []
+
 singleModuleContext :: FilePath -> ModuleName -> Context
-singleModuleContext dir moduleName = Context dir moduleName [path] [moduleName] []
-  where path = "src" </> moduleName <.> "hs"
+singleModuleContext dir moduleName = Context dir [moduleName] []
 
 data Stream m where
   Stream :: Monad m => m ()             -- prepare
@@ -50,8 +52,6 @@ data Stream m where
                     -> Stream m
 
 data Context = Context { workingDir      :: FilePath
-                       , name            :: Name         -- A name for debugging
-                       , sources         :: [FilePath]   -- Source files to load
                        , modules         :: [ModuleName] -- Modules to import
                        , topLevelModules :: [ModuleName] -- Modules to interpret (private elems will be available)
                        }
@@ -59,20 +59,20 @@ data Context = Context { workingDir      :: FilePath
 data Presentation = Presentation { rootDir  :: FilePath
                                  , distDir  :: FilePath
                                  , metadata :: Metadata
-                                 } deriving Show
+                                 }
 
 data Metadata = Metadata { title  :: String
                          , design :: Design
-                         } deriving Show
+                         }
 
 data Design = Design { width  :: Pixel
                      , height :: Pixel
                      , theme  :: Maybe Theme
                      , icon   :: Maybe FilePath
-                     } deriving Show
+                     }
 
 type Pixel = Int
-data Theme = Builtin String | Custom FilePath | Patch Theme FilePath deriving Show
+data Theme = Builtin String | Custom FilePath | Patch Theme FilePath
 
 instance FromJSON Metadata where
   parseJSON (Object v) = Metadata <$> v .: "title"

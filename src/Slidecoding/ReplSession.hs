@@ -22,8 +22,8 @@ data ReplSession = ReplSession { replIn      :: Handle
                                , replProcess :: ProcessHandle
                                }
 
-evalInSession :: String -> ReplSession -> IO (Either String String)
-evalInSession cmd session@(ReplSession _ out err _) = do
+evalInSession :: ReplSession -> String -> IO (Either String String)
+evalInSession session@(ReplSession _ out err _) cmd = do
   sendCommand (":{\n" ++ prepareCode cmd ++ "\n") session
   clearHandle out 10
   clearHandle err 0
