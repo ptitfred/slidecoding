@@ -37,6 +37,8 @@ function hasContext(element) {
 function newConsole(endpoint, element) {
   var replContext = getContext(element);
   var jqconsole = element.jqconsole("", "> ");
+
+  var startPrompt;
   var writeText = function(text) {
     jqconsole.Write(text, 'jqconsole-output');
     startPrompt();
@@ -46,40 +48,51 @@ function newConsole(endpoint, element) {
     startPrompt();
   }
 
-  var connect = function () {
-    var ws = new WebSocket(url(endpoint));
-    ws.onmessage = function(event) {
-      jqconsole.Enable();
-      writeText(event.data);
-    };
-    ws.onerror = function(event) {
-      writeError("Connection error\n");
-    };
-    ws.onopen = function(event) {
-      ws.send("/load " + replContext);
-    };
-    return ws;
-  }
-  var ws = connect();
-
-  var startPrompt = function () {
-    jqconsole.Prompt(true, function (input) {
-      if (input === '/reconnect') {
-        ws = connect();
-      } else if (input !== '') {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(input);
-        } else {
-          writeError("Not connected.");
-        }
-      }
-    });
-  };
   jqconsole.Disable();
 
   addFullscreenHint(element);
 
-  startPrompt();
+  if (endpoint) {
+    var connect = function () {
+      var ws = new WebSocket(url(endpoint));
+      ws.onmessage = function(event) {
+        jqconsole.Enable();
+        writeText(event.data);
+      };
+      ws.onerror = function(event) {
+        writeError("Connection error\n");
+      };
+      ws.onopen = function(event) {
+        ws.send("/load " + replContext);
+      };
+      return ws;
+    }
+    var ws = connect();
+
+    startPrompt = function () {
+      jqconsole.Prompt(true, function (input) {
+        if (input === '/reconnect') {
+          ws = connect();
+        } else if (input !== '') {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(input);
+          } else {
+            writeError("Not connected.");
+          }
+        }
+      });
+    };
+
+    startPrompt();
+  } else {
+    startPrompt = function() {};
+
+    writeText("REPL offline.\n" +
+              "No livecoding for you :-(");
+
+    jqconsole.Prompt(true, function() {});
+  }
+
 };
 
 function addFullscreenHint(element) {
@@ -123,7 +136,7 @@ function isKey(e, keyValue) {
       replFullscreenToggle: 70  // f
     },
     repl: {
-      endpoint: '//echo.websocket.org/'
+      endpoint: ''
     }
   });
 
