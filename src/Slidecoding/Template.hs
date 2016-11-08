@@ -14,7 +14,7 @@ module Slidecoding.Template
     ) where
 
 import Slidecoding.Assets
-import Slidecoding.Types                  (Presentation, rootDir, distDir, metadata, design, Design(..), icon, Theme(..), Port)
+import Slidecoding.Types                  (Presentation, rootDir, distDir, metadata, design, Design(..), icon, Theme(..), TransitionStyle(..), Port)
 
 import Prelude                     hiding (id, head, div)
 
@@ -79,7 +79,7 @@ deckjs d = -- Dependencies before core otherwise core doesn't boot
            deckjsDependencies
         <> deckjsCore
         <> deckjsTheme (fromMaybe defaultTheme (theme d))
-        <> deckjsTransition None
+        <> deckjsTransition (transition d)
         <> deckjsExtensions
 
 deckjsCore :: Asset
@@ -117,13 +117,13 @@ deckjsReplExtension = CSS "deckjs/extensions/repl/deck.repl.css"
 deckjsLichessExtension :: Asset
 deckjsLichessExtension = JS "deckjs/extensions/lichess/deck.lichess.js"
 
-data NavigationStyle = None | HorizontalSlide | VerticalSlide | Fade
+deckjsTransition :: Maybe TransitionStyle -> Asset
+deckjsTransition = maybe mempty deckjsTransition'
 
-deckjsTransition :: NavigationStyle -> Asset
-deckjsTransition None            = mempty
-deckjsTransition HorizontalSlide = CSS "deckjs/themes/transition/horizontal-slide.css"
-deckjsTransition VerticalSlide   = CSS "deckjs/themes/transition/vertical-slide.css"
-deckjsTransition Fade            = CSS "deckjs/themes/transition/fade.css"
+deckjsTransition' :: TransitionStyle -> Asset
+deckjsTransition' HorizontalSlide = CSS "deckjs/themes/transition/horizontal-slide.css"
+deckjsTransition' VerticalSlide   = CSS "deckjs/themes/transition/vertical-slide.css"
+deckjsTransition' Fade            = CSS "deckjs/themes/transition/fade.css"
 
 template :: Maybe Port -> Design -> String -> Html -> Html
 template port d titleText slides = do

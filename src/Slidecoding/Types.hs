@@ -19,6 +19,7 @@ module Slidecoding.Types
     , Source(..)
     , Stream(..)
     , Symbol(..)
+    , TransitionStyle(..)
     , Theme(..)
     , ValidationMessage
     ) where
@@ -65,14 +66,16 @@ data Metadata = Metadata { title    ::  String
                          , contexts :: [Context]
                          }
 
-data Design = Design { width  :: Pixel
-                     , height :: Pixel
-                     , theme  :: Maybe Theme
-                     , icon   :: Maybe FilePath
+data Design = Design { width      :: Pixel
+                     , height     :: Pixel
+                     , theme      :: Maybe Theme
+                     , icon       :: Maybe FilePath
+                     , transition :: Maybe TransitionStyle
                      }
 
 type Pixel = Int
 data Theme = Builtin String | Custom FilePath | Patch Theme FilePath
+data TransitionStyle = HorizontalSlide | VerticalSlide | Fade
 
 instance FromJSON Metadata where
   parseJSON (Object v) = Metadata <$> v .:  "title"
@@ -85,6 +88,7 @@ instance FromJSON Design where
                                 <*> v .:? "height" .!= 1000
                                 <*> v .:? "theme"
                                 <*> v .:? "icon"
+                                <*> v .:? "transition"
   parseJSON invalid    = typeMismatch "Design" invalid
 
 data PartialContext = PartialContext ModuleName [ModuleName]
@@ -109,5 +113,11 @@ instance FromJSON Theme where
       where getBase   = Builtin <$> v .: "base"
             getCustom = v .: "custom"
   parseJSON invalid    = typeMismatch "Theme" invalid
+
+instance FromJSON TransitionStyle where
+  parseJSON (String "fade")             = return Fade
+  parseJSON (String "horizontal-slide") = return HorizontalSlide
+  parseJSON (String "vertical-slide")   = return VerticalSlide
+  parseJSON  invalid                    = typeMismatch "TransitionStyle" invalid
 
 type ValidationMessage = String
