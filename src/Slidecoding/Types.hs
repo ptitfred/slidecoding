@@ -52,7 +52,7 @@ data Stream m where
 type ContextName = String
 
 data Context = Context { name         ::  ContextName
-                       , mainModule   ::  ModuleName
+                       , srcModules   :: [ModuleName]
                        , otherModules :: [ModuleName]
                        }
 
@@ -91,11 +91,11 @@ instance FromJSON Design where
                                 <*> v .:? "transition"
   parseJSON invalid    = typeMismatch "Design" invalid
 
-data PartialContext = PartialContext ModuleName [ModuleName]
+data PartialContext = PartialContext [ModuleName] [ModuleName]
 
 instance FromJSON PartialContext where
-  parseJSON (Object o) = PartialContext <$> o .:  "module"
-                                        <*> o .:? "others" .!= []
+  parseJSON (Object o) = PartialContext <$> o .:? "sources" .!= []
+                                        <*> o .:? "others"  .!= []
   parseJSON invalid    = typeMismatch "PartialContext" invalid
 
 instance FromJSON [Context] where
