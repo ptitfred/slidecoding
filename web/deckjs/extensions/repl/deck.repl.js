@@ -175,6 +175,8 @@ function isKey(e, keyValue) {
     $('.deck-current .repl-console-column').toggleClass('repl-console-column-fullscreen');
   });
 
+  warnAgainstCtrlW($);
+
   $d.bind('deck.init', function() {
     var opts = $[deck]('getOptions');
     // Bind key events
@@ -190,3 +192,10 @@ function isKey(e, keyValue) {
     });
   });
 })(jQuery, 'deck', this);
+
+function warnAgainstCtrlW($) {
+  $(window).on('beforeunload', function(e) {
+    return 'Bad habit of deleting words with Ctrl-W? ESC to stay here.';
+  });
+
+}
