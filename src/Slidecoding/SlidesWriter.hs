@@ -114,9 +114,10 @@ chapterTitle key title' = Header 1 attributes [Str title']
   where attributes = (key, ["chapter-title"], [])
 
 replaceSourceBlock :: [Description] -> Block -> [Block]
-replaceSourceBlock descs original@(Para [Link _ contents (url, _)]) | isSourceUrl url = expandLink (inlineLink descs url)
-  where expandLink (Just b) = [Para contents, b]
-        expandLink Nothing  = [original]
+replaceSourceBlock descs original@(Para [Link _ contents (url, _)]) | isSourceUrl url = expandLink contents (inlineLink descs url)
+  where expandLink [] (Just b) = [b]
+        expandLink c  (Just b) = [Para c, b]
+        expandLink _   Nothing = [original]
 replaceSourceBlock _ b = [b]
 
 isSourceUrl :: String -> Bool
