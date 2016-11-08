@@ -7,6 +7,7 @@ design:
   theme:
     base: neon
     custom: "assets/custom.css"
+  transition: fade
 contexts:
   chapter1:
     module: Example1
