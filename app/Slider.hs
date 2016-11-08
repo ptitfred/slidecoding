@@ -5,7 +5,7 @@ import Slidecoding.Types
 
 import Control.Concurrent (forkIO)
 import Control.Monad      ((>=>), void)
-import Data.List          (isSuffixOf)
+import Data.List          (isSuffixOf, sort)
 import System.Directory   (createDirectoryIfMissing, getDirectoryContents, doesDirectoryExist)
 import System.Environment (getArgs)
 import System.FilePath    ((</>))
@@ -116,7 +116,7 @@ listFiles :: (String -> Bool) -> FilePath -> IO (Maybe [FilePath])
 listFiles predicate path = do
   goOn <- doesDirectoryExist path
   if goOn
-  then Just . filter predicate <$> getDirectoryContents path
+  then Just . sort . filter predicate <$> getDirectoryContents path
   else return Nothing
 
 withConfig :: (Config -> IO ()) -> IO ()
