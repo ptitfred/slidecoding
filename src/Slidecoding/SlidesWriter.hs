@@ -13,7 +13,7 @@ import Data.Map                          (lookup)
 import Data.Maybe                        (fromMaybe)
 import Data.Monoid                       ((<>))
 import System.FilePath                   ((</>), dropExtension,takeFileName)
-import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr
+import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def
                                         , nullMeta, readMarkdown, writePlain, writeHtml)
 import Text.Pandoc.Definition            (MetaValue(..))
 
@@ -123,7 +123,7 @@ isSourceUrl :: String -> Bool
 isSourceUrl url = "source://" `isPrefixOf` url
 
 inlineLink :: [Description] -> String -> Maybe Block
-inlineLink descs url = CodeBlock nullAttr <$> source
+inlineLink descs url = CodeBlock ("", ["haskell"], []) <$> source
   where source = loadSource descs url
 
 loadSource :: [Description] -> String -> Maybe String
