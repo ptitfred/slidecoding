@@ -103,7 +103,7 @@ deckjsTheme (Patch t l) = deckjsTheme t <> CSS l
 deckjsTheme (Custom l)  = CSS l
 
 deckjsExtensions :: Asset
-deckjsExtensions = deckjsFitExtension <> deckjsReplExtension
+deckjsExtensions = deckjsFitExtension <> deckjsReplExtension <> deckjsLichessExtension
 
 deckjsFitExtension :: Asset
 deckjsFitExtension = CSS "deckjs/extensions/fit/deck.fit-fs.css"
@@ -113,6 +113,9 @@ deckjsReplExtension :: Asset
 deckjsReplExtension = CSS "deckjs/extensions/repl/deck.repl.css"
                    <> JS  "deckjs/extensions/repl/deck.repl.js"
                    <> JS  "jqconsole.min.js"
+
+deckjsLichessExtension :: Asset
+deckjsLichessExtension = JS "deckjs/extensions/lichess/deck.lichess.js"
 
 data NavigationStyle = None | HorizontalSlide | VerticalSlide | Fade
 

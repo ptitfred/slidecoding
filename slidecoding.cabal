@@ -25,6 +25,7 @@ data-files:          highlight-pack-haskell.js
                    , deckjs/core/print.css
                    , deckjs/extensions/fit/deck.fit-fs.css
                    , deckjs/extensions/fit/deck.fit.js
+                   , deckjs/extensions/lichess/deck.lichess.js
                    , deckjs/extensions/repl/deck.repl.css
                    , deckjs/extensions/repl/deck.repl.js
                    , deckjs/themes/style/*.css
