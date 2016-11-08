@@ -13,7 +13,7 @@ import Data.Map                          (lookup)
 import Data.Maybe                        (fromMaybe)
 import Data.Monoid                       ((<>))
 import System.FilePath                   ((</>), dropExtension,takeFileName)
-import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def, nullAttr
+import Text.Pandoc                       (Pandoc(..), Meta(..), Block(..), Inline(..), def
                                         , nullMeta, readMarkdown, writePlain, writeHtml)
 import Text.Pandoc.Definition            (MetaValue(..))
 
@@ -114,16 +114,17 @@ chapterTitle key title' = Header 1 attributes [Str title']
   where attributes = (key, ["chapter-title"], [])
 
 replaceSourceBlock :: [Description] -> Block -> [Block]
-replaceSourceBlock descs original@(Para [Link _ contents (url, _)]) | isSourceUrl url = expandLink (inlineLink descs url)
-  where expandLink (Just b) = [Para contents, b]
-        expandLink Nothing  = [original]
+replaceSourceBlock descs original@(Para [Link _ contents (url, _)]) | isSourceUrl url = expandLink contents (inlineLink descs url)
+  where expandLink [] (Just b) = [b]
+        expandLink c  (Just b) = [Para c, b]
+        expandLink _   Nothing = [original]
 replaceSourceBlock _ b = [b]
 
 isSourceUrl :: String -> Bool
 isSourceUrl url = "source://" `isPrefixOf` url
 
 inlineLink :: [Description] -> String -> Maybe Block
-inlineLink descs url = CodeBlock nullAttr <$> source
+inlineLink descs url = CodeBlock ("", ["haskell"], []) <$> source
   where source = loadSource descs url
 
 loadSource :: [Description] -> String -> Maybe String
