@@ -68,6 +68,9 @@ isCommand _ = False
 handleCommand :: (Monad m, MonadIO m) => [String] -> [Context] -> ReplSession -> m (Either String String)
 handleCommand ("/help": _) _ _ = help
 handleCommand ("/?": _)    _ _ = help
+handleCommand ("/load": "prelude": _) _ s = do
+  sayIO "/load prelude"
+  loadContext s prelude
 handleCommand ("/load": ctxName : _) cs s = do
   sayIO ("/load " ++ ctxName)
   maybe (fail notFound) (loadContext s) ctx

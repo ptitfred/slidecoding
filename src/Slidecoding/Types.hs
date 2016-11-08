@@ -4,6 +4,7 @@
 
 module Slidecoding.Types
     ( Context(..)
+    , prelude
     , ContextName
     , Description(..)
     , Design(..)
@@ -55,6 +56,9 @@ data Context = Context { name         ::  ContextName
                        , srcModules   :: [ModuleName]
                        , otherModules :: [ModuleName]
                        }
+
+prelude :: Context
+prelude = Context "prelude" [] []
 
 data Presentation = Presentation { rootDir  :: FilePath
                                  , distDir  :: FilePath
