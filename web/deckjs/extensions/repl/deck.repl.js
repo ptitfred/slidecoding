@@ -153,6 +153,10 @@ function isKey(e, keyValue) {
   });
 
   $d.bind('deck.beforeInit', function() {
+    if ($[deck]('getOptions').repl.endpoint) {
+      warnAgainstCtrlW($);
+    }
+
     $.each($[deck]('getSlides'), function(i, $slide) {
       if ($slide.hasClass('repl') && hasContext($slide)) {
         addReplToSlide($, deck, $slide);
@@ -174,8 +178,6 @@ function isKey(e, keyValue) {
     $('.deck-current .repl-text-column').toggle();
     $('.deck-current .repl-console-column').toggleClass('repl-console-column-fullscreen');
   });
-
-  warnAgainstCtrlW($);
 
   $d.bind('deck.init', function() {
     var opts = $[deck]('getOptions');
