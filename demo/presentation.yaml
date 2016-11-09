@@ -10,7 +10,7 @@ design:
   transition: fade
 contexts:
   chapter1:
-    module: Example1
+    sources: [ Example1 ]
   chapter2:
-    module: Example2
-    others: [ Utils ]
+    sources: [ Example2, Utils ]
+    others:  [ Control.Monad ]

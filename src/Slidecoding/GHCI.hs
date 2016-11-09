@@ -68,6 +68,9 @@ isCommand _ = False
 handleCommand :: (Monad m, MonadIO m) => [String] -> [Context] -> ReplSession -> m (Either String String)
 handleCommand ("/help": _) _ _ = help
 handleCommand ("/?": _)    _ _ = help
+handleCommand ("/load": "prelude": _) _ s = do
+  sayIO "/load prelude"
+  loadContext s prelude
 handleCommand ("/load": ctxName : _) cs s = do
   sayIO ("/load " ++ ctxName)
   maybe (fail notFound) (loadContext s) ctx
@@ -106,13 +109,13 @@ fail = return . Left
 loadContext :: (Monad m, MonadIO m) => ReplSession -> Context -> m (Either String String)
 loadContext s ctx = liftIO $ do
   evalSilent  ":load" -- Resets the context
-  evalSilent (":load " ++ unwords allModules)
-  evalAllWith importModule others
-  where allModules = main : others
-        main = mainModule ctx
+  evalSilent (":load " ++ unwords sources)
+  evalAllWith importModule allModules
+  where allModules = sources ++ others
+        sources = srcModules ctx
         others = otherModules ctx
         importModule m = "import " ++ m
-        eval = evalInSession s
+        eval m = putStrLn m >> evalInSession s m
         evalSilent = void . eval
         evalAllWith f = reduceMWith (eval.f)
 
