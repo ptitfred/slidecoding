@@ -133,16 +133,13 @@ template port d titleText slides = do
       meta ! charset "utf-8"
       meta ! httpEquiv "X-UA-Compatible" ! content "IE=edge,chrome=1"
       title' titleText
-      include (favicon d)
-      include mainStylesheet
-      include highlightJS
-      include (deckjs d)
+      include (bundle d)
     body ! class_ "deck-container" $ do
       slides
       include $ bootDeckJS port d
 
-mkSection :: String   -- id of the section element
-          -> [String] -- classes of the section element
+mkSection :: String       -- id of the section element
+          -> [String]     -- classes of the section element
           -> Maybe String -- optional REPL context name to store on the section element
           -> Html -> Html
 mkSection ""  cs ctx = mkSectionWithContext cs ctx
