@@ -18,7 +18,12 @@ import System.FilePath                    ((</>), takeDirectory)
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (title)
 
-data Asset = CSS String | CSSPrint String | JS String | InlineJS String | Favicon String | Bundle [Asset]
+data Asset = CSS      String
+           | CSSPrint String
+           | JS       String
+           | InlineJS String
+           | Favicon  String
+           | Bundle   [Asset]
 
 distribute :: Presentation -> Asset -> IO ()
 distribute presentation (Bundle assets) = mapM_ (distribute presentation) assets
