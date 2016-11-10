@@ -32,4 +32,12 @@ Slide display with [Deck.js](https://github.com/imakewebthings/deck.js).
 
 PDF export done with [decktape](https://github.com/astefanutti/decktape).
 
+# ToDo's
+
+ - Share context between all repls of the same chapter
+ - Have a custom HTML Writer to put callbacks and have custom markup
+ - Automatically distribute assets used in the template
+ - Let custom assets be defined in the presentation
+ - Adapt other deckjs default themes (swiss and web-2.0) to this
+
 Frédéric Menou
